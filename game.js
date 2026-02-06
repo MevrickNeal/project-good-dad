@@ -125,6 +125,8 @@ function addMobileControls(scene, actionText = 'O') {
     scene.rightBtn = scene.add.text(200, 500, '>', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
     scene.upBtn = scene.add.text(125, 420, '^', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
     scene.downBtn = scene.add.text(125, 500, 'v', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
+    
+    // Action Button
     scene.actionBtn = scene.add.text(650, 480, actionText, actionStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
 
     scene.leftBtn.isDown = false; scene.rightBtn.isDown = false;
@@ -172,7 +174,8 @@ class BootScene extends Phaser.Scene {
         this.load.image('momo_angry', 'momo-boss.png');
         this.load.image('momo_happy', 'momo-happy.png');
         this.load.image('files', 'files.png'); 
-        this.load.image('fire', 'golla.png');
+        this.load.image('fire', 'golla.png'); // Used for fire
+        this.load.image('golla', 'golla.png'); // Used for fireball
         this.load.image('heart', 'heart.png');
         this.load.image('choco', 'choco.png');
         this.load.image('flower', 'flower.png');
@@ -379,7 +382,6 @@ class LevelRun extends Phaser.Scene {
     }
 }
 
-// --- LEVEL 3: COLLECT (FREE MOVEMENT) ---
 class LevelCollect extends Phaser.Scene {
     constructor() { super("LevelCollect"); }
     create() {
@@ -392,7 +394,6 @@ class LevelCollect extends Phaser.Scene {
         
         this.flowers = this.physics.add.group();
         this.time.addEvent({ delay: 1500, callback: () => {
-            // Spawn flowers at random Y heights
             let yPos = Phaser.Math.Between(300, 550);
             let f = this.flowers.create(800, yPos, 'flower').setScale(0.15).setVelocityX(-200);
             f.body.setAllowGravity(false);
@@ -411,12 +412,9 @@ class LevelCollect extends Phaser.Scene {
                 this.score++;
                 this.scoreText.setText('Flowers: ' + this.score + '/10');
                 if (this.score >= 10) {
-                    // SPAWN BUS
                     this.bus = this.physics.add.sprite(700, 400, 'bus_side').setScale(0.5).setImmovable(true);
                     this.bus.setDepth(90);
                     this.add.text(600, 300, "WALK TO BUS ->", { fontSize: '24px', backgroundColor: 'blue' });
-                    
-                    // Trigger Next Level on Collision
                     this.physics.add.overlap(this.player, this.bus, () => {
                         this.scene.start("LevelBus");
                     });
@@ -426,8 +424,6 @@ class LevelCollect extends Phaser.Scene {
     }
     update() {
         this.bg.tilePositionX += 5;
-        
-        // FREE MOVEMENT LOGIC
         this.player.setVelocity(0);
         let speed = 250;
         let left = this.cursors.left.isDown || (this.leftBtn && this.leftBtn.isDown);
@@ -530,7 +526,6 @@ class LevelBike extends Phaser.Scene {
         }, loop: true });
         this.add.text(10, 10, "Distance: 200m", { fontSize: '20px', backgroundColor: '#000' });
         
-        // No damage, just dodge feel
         this.physics.add.overlap(this.player, this.traffic, (p, t) => {
              t.destroy();
              this.cameras.main.shake(200);
@@ -559,10 +554,29 @@ class LevelBoss extends Phaser.Scene {
         this.hpText = this.add.text(16, 16, "Momo Anger: 20", { fontSize: '32px', color: '#fff' });
         this.pText = this.add.text(600, 16, "Lian HP: 3", { fontSize: '32px', color: '#fff' });
         this.tweens.add({ targets: this.boss, x: 600, duration: 2000, yoyo: true, repeat: -1 });
+        
         this.lasers = this.physics.add.group();
-        this.time.addEvent({ delay: 1000, callback: () => {
-            let l = this.lasers.create(this.boss.x, this.boss.y, 'fire').setVelocityY(300);
-        }, loop: true });
+        
+        // BOSS ATTACK PATTERN
+        this.time.addEvent({ delay: 1200, loop: true, callback: () => {
+            let rand = Phaser.Math.Between(0, 2);
+            if (rand === 0) {
+                // Fireball (Golla)
+                let orb = this.lasers.create(this.boss.x, this.boss.y, 'golla').setScale(0.2);
+                this.physics.moveToObject(orb, this.player, 250);
+            } else if (rand === 1) {
+                // Laser (Fast)
+                let beam = this.lasers.create(this.boss.x, this.boss.y, 'fire').setScale(0.1, 1).setTint(0xff0000);
+                beam.setVelocityY(800);
+            } else {
+                // Flame (Spread)
+                for(let i = -1; i <= 1; i++) {
+                    let flame = this.lasers.create(this.boss.x, this.boss.y, 'fire').setScale(0.15).setTint(0xff8800);
+                    flame.setVelocity(i * 100, 400);
+                }
+            }
+        }});
+
         this.physics.add.overlap(this.player, this.lasers, (p, l) => {
             l.destroy();
             this.playerHP--;
@@ -571,12 +585,11 @@ class LevelBoss extends Phaser.Scene {
             if (this.playerHP <= 0) this.scene.restart();
         });
         
-        // TRAP QUESTION
         this.time.addEvent({ delay: 5000, loop: true, callback: this.triggerTrap, callbackScope: this });
 
         this.input.keyboard.on('keydown-SPACE', this.shootHeart, this);
         this.cursors = this.input.keyboard.createCursorKeys();
-        addMobileControls(this, 'HEART'); // Special button name
+        addMobileControls(this, 'HEART');
     }
     
     triggerTrap() {
@@ -589,7 +602,7 @@ class LevelBoss extends Phaser.Scene {
             this.scene.resume();
         } else {
             alert("WRONG ANSWER! YOU DIED!");
-            location.reload(); // Hard Reset
+            location.reload(); 
         }
     }
 
@@ -600,15 +613,16 @@ class LevelBoss extends Phaser.Scene {
         
         if (left) this.player.x -= 5;
         if (right) this.player.x += 5;
-        // Limit shoot rate manually or just let it spam
         if (shoot && Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)) || (this.actionBtn.isDown && !this.lastShoot)) {
              this.shootHeart();
              this.lastShoot = true;
-             this.time.delayedCall(200, () => { this.lastShoot = false; }); // Debounce
+             this.time.delayedCall(200, () => { this.lastShoot = false; });
         }
     }
     shootHeart() {
-        let heart = this.physics.add.sprite(this.player.x, this.player.y, 'heart').setVelocityY(-400);
+        let heart = this.physics.add.sprite(this.player.x, this.player.y - 20, 'heart');
+        heart.setScale(0.05); // Tiny Heart
+        heart.setVelocityY(-600); // Fast
         this.physics.add.overlap(heart, this.boss, (h, b) => {
             h.destroy();
             this.bossHP--;
