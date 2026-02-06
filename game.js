@@ -2,7 +2,7 @@
 // PART 1: THE PSYCHOPATH & PRINCESS QUIZ (EXPANDED)
 // ==========================================
 const quizData = [
-    // --- PHASE 1: THE PSYCHOPATH SCREENING (10 Questions) ---
+    // --- PHASE 1: THE PSYCHOPATH SCREENING ---
     { q: "You see a child trip. Do you laugh?", a: ["A. Yes, loudly", "B. Internal Chuckle", "C. No, I help them"] },
     { q: "Is chaos a ladder or a headache?", a: ["A. Ladder", "B. Headache"] },
     { q: "Do you manipulate situations for fun?", a: ["A. Often", "B. Sometimes", "C. Never"] },
@@ -17,7 +17,7 @@ const quizData = [
     // --- PHASE 2: THE PIVOT ---
     { q: "WAIT. Recalibrating... Are you the Boyfriend?", a: ["A. No", "B. I am the MAN"] },
     
-    // --- PHASE 3: THE ROAST OF THE BOYFRIEND (14 Questions) ---
+    // --- PHASE 3: THE ROAST OF THE BOYFRIEND ---
     { q: "Who screams when they see a cockroach?", a: ["A. Me", "B. Him (High pitch scream)"] },
     { q: "If he gets a simple cold, what happens?", a: ["A. He takes meds", "B. He writes his Last Will & Testament"] },
     { q: "Who actually carries the heavy grocery bags?", a: ["A. Me, obviously", "B. His back hurts"] },
@@ -99,17 +99,19 @@ function startGame() {
 class BootScene extends Phaser.Scene {
     constructor() { super("Boot"); }
     preload() {
+        // Look inside the 'sprites' folder as seen in your GitHub
         this.load.path = 'assets/sprites/';
 
-        // AUDIO LOADING
-        this.load.audio('bgm', 'bgm.mp3'); // Make sure bgm.mp3 is in assets folder!
+        // OPTIONAL MUSIC LOAD (Won't crash if missing)
+        this.load.audio('bgm', 'bgm.mp3');
 
-        // Backgrounds
-        this.load.image('city', 'evening city.jpg');
-        this.load.image('road', 'vangarasta.jpg');
+        // Backgrounds (Updated to .png based on your list)
+        this.load.image('city', 'evening city.png'); 
+        this.load.image('road', 'vangarasta.png');
         
         // Characters
         this.load.image('hunda_top', 'top_bike.png');
+        this.load.image('hunda_side', 'hunda.png'); // Side view bike
         this.load.image('boss', 'boss-office.png');
         this.load.image('baba_idle', 'baba.png');
         this.load.image('baba_w1', 'walkbaba.png');
@@ -118,17 +120,17 @@ class BootScene extends Phaser.Scene {
         
         // Pathao
         this.load.image('pathao_single', 'bikeride.png');
-        this.load.image('pathao_mob', 'grabarm-removebg-preview.png');
+        this.load.image('pathao_mob', 'grabarm.png');
         
         // Enemies
-        this.load.image('dog_sleep', 'kuttasleep.jpg');
+        this.load.image('dog_sleep', 'kuttasleep.jpg'); // Still jpg
         this.load.image('dog_bark', 'kuttavau.png');
-        this.load.image('bus_side', 'poristhanside.jpg');
+        this.load.image('bus_side', 'poristhanside.png'); // Updated to png
         this.load.image('bus_top', 'bus-topdown.png');
         
-        // Boss Momo
-        this.load.image('momo_angry', 'momo-boss.jpg');
-        this.load.image('momo_happy', 'momo-happy.jpg');
+        // Boss Momo (Updated to .png)
+        this.load.image('momo_angry', 'momo-boss.png');
+        this.load.image('momo_happy', 'momo-happy.png');
         
         // Items
         this.load.image('files', 'files.png'); 
@@ -137,7 +139,7 @@ class BootScene extends Phaser.Scene {
         this.load.image('choco', 'choco.png');
         this.load.image('flower', 'flower.png');
         this.load.image('keys', 'keys.png');
-        this.load.image('win', 'win-removebg-preview.png');
+        this.load.image('win', 'win.png');
         
         // Running Frames
         for(let i=1; i<=10; i++) this.load.image(`l${i}`, `l${i}.png`);
@@ -163,13 +165,14 @@ class BootScene extends Phaser.Scene {
     }
 }
 
-// --- LEVEL 1: SNEAK OUT (MUSIC STARTS HERE) ---
+// --- LEVEL 1: SNEAK OUT ---
 class LevelSneak extends Phaser.Scene {
     constructor() { super("LevelSneak"); }
     create() {
-        // START MUSIC
-        let music = this.sound.add('bgm');
-        music.play({ loop: true, volume: 0.5 });
+        // OPTIONAL MUSIC PLAY
+        if (this.cache.audio.exists('bgm')) {
+            this.sound.play('bgm', { loop: true, volume: 0.5 });
+        }
 
         this.add.text(400, 100, "LEVEL 1: SNEAK OUT", { fontSize: '30px', color: '#ffffff' }).setOrigin(0.5);
         this.add.text(400, 140, "Avoid Baba. Reach the Door (Right) ->", { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
