@@ -1,1 +1,30 @@
-ad
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personality Assessment Unit v9.0</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        /* Quick Override for hiding game initially */
+        #game-wrapper { display: none; width: 800px; height: 600px; margin: 0 auto; border: 4px solid #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="quiz-ui">
+        <div class="crt-overlay"></div>
+        <div class="container">
+            <h1 id="header-text">PSYCH_EVAL_PROTOCOL</h1>
+            <div id="question-display">INITIALIZING SYSTEM...</div>
+            <div id="options-display"></div>
+            <div id="progress-bar"><div id="progress-fill"></div></div>
+        </div>
+    </div>
+
+    <div id="game-wrapper"></div>
+
+    <script src="game.js"></script>
+</body>
+</html>
