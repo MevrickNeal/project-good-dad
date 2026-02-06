@@ -99,7 +99,7 @@ function startGame() {
 class BootScene extends Phaser.Scene {
     constructor() { super("Boot"); }
     preload() {
-        this.load.path = 'assets/';
+        this.load.path = 'assets/sprites/';
 
         // AUDIO LOADING
         this.load.audio('bgm', 'bgm.mp3'); // Make sure bgm.mp3 is in assets folder!
