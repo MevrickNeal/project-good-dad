@@ -2,7 +2,6 @@
 // PART 1: THE PSYCHOPATH & DAD QUIZ
 // ==========================================
 const quizData = [
-    // Phase 1: Psychopath Test (10 Questions)
     { q: "You see a child trip. Do you laugh?", a: ["Yes", "Internal Chuckle"] },
     { q: "Is chaos a ladder or a headache?", a: ["Ladder", "Headache"] },
     { q: "Do you manipulate situations for fun?", a: ["Often", "Sometimes"] },
@@ -12,10 +11,9 @@ const quizData = [
     { q: "Is revenge a dish best served cold?", a: ["Yes", "Frozen"] },
     { q: "Can you lie without blinking?", a: ["Easy", "Try me"] },
     { q: "Are you the 'Psychopath' in this relationship?", a: ["Yes", "100%"] },
-    // The Pivot
     { q: "WAIT. Recalibrating... Are you the Boyfriend?", a: ["No", "I am the MAN"] },
     
-    // Phase 2: Good Dad Test (10 Questions)
+    // Phase 2: Good Dad Test
     { q: "Do you act strong but want to be held?", a: ["Yes", "Secretly"] },
     { q: "Is your partner a 'Princess'?", a: ["100%", "200%"] },
     { q: "Do you pay the bills while she looks away?", a: ["Always", "Yes"] },
@@ -55,18 +53,18 @@ function endQuiz() {
     setTimeout(() => {
         qBox.innerHTML = "RESULT: <br><span style='font-size:30px; color:white'>YOU ARE A GOOD DAD.</span>";
         setTimeout(() => {
-            document.body.classList.add('glitch'); // Trigger Glitch
+            document.body.classList.add('glitch');
             setTimeout(() => {
                 document.body.classList.remove('glitch');
                 ui.style.display = 'none';
                 document.getElementById('game-wrapper').style.display = 'block';
-                startGame(); // LAUNCH PHASER
+                startGame();
             }, 1500);
         }, 2000);
     }, 2000);
 }
 
-loadQuestion(); // Start Quiz on Load
+loadQuestion();
 
 // ==========================================
 // PART 2: THE GAME ENGINE (PHASER JS)
@@ -84,41 +82,54 @@ function startGame() {
     new Phaser.Game(config);
 }
 
-// --- SCENE 0: ASSET LOADING ---
+// --- SCENE 0: ASSET LOADING (MAPPED TO YOUR EXACT FILENAMES) ---
 class BootScene extends Phaser.Scene {
     constructor() { super("Boot"); }
     preload() {
-        // Load all assets mapped to new names
         this.load.path = 'assets/';
-        this.load.image('city', 'city.jpg');
-        this.load.image('road', 'road.jpg');
+
+        // Backgrounds
+        this.load.image('city', 'evening city.jpg');
+        this.load.image('road', 'vangarasta.jpg');
+        
+        // Characters & Vehicles
         this.load.image('hunda_side', 'hunda.png');
         this.load.image('hunda_top', 'top_bike.png');
-        this.load.image('boss', 'boss.png');
-        this.load.image('files', 'files.png');
-        this.load.image('dog_sleep', 'dog_sleep.jpg');
-        this.load.image('dog_bark', 'dog_bark.png');
-        this.load.image('bus_side', 'bus_side.jpg');
-        this.load.image('bus_top', 'bus_top.png');
-        this.load.image('momo_angry', 'momo_angry.jpg');
-        this.load.image('momo_happy', 'momo_happy.jpg');
-        this.load.image('fire', 'fire.png');
+        this.load.image('boss', 'boss-office.png');
+        
+        // Baba (Dad)
+        this.load.image('baba_idle', 'baba.png');
+        this.load.image('baba_w1', 'walkbaba.png');
+        this.load.image('baba_w2', 'walkbaba1.png');
+        this.load.image('baba_w3', 'walkbaba2.png');
+        
+        // Pathao
+        this.load.image('pathao_single', 'bikeride.png');
+        this.load.image('pathao_mob', 'grabarm-removebg-preview.png');
+        
+        // Enemies & Obstacles
+        this.load.image('dog_sleep', 'kuttasleep.jpg');
+        this.load.image('dog_bark', 'kuttavau.png');
+        this.load.image('bus_side', 'poristhanside.jpg');
+        this.load.image('bus_top', 'bus-topdown.png');
+        
+        // Boss Momo
+        this.load.image('momo_angry', 'momo-boss.jpg');
+        this.load.image('momo_happy', 'momo-happy.jpg');
+        
+        // Items & Projectiles
+        this.load.image('files', 'files.png'); 
+        this.load.image('fire', 'golla.png');
         this.load.image('heart', 'heart.png');
         this.load.image('choco', 'choco.png');
         this.load.image('flower', 'flower.png');
         this.load.image('keys', 'keys.png');
-        this.load.image('pathao_single', 'pathao_single.png');
-        this.load.image('pathao_mob', 'pathao_mob.png');
-        this.load.image('win', 'win.png');
+        this.load.image('win', 'win-removebg-preview.png');
         
-        // Load Running Frames individually
-        for(let i=1; i<=10; i++) this.load.image(`l${i}`, `l${i}.png`);
-        
-        // Load Baba Frames
-        this.load.image('baba_idle', 'baba_idle.png');
-        this.load.image('baba_w1', 'baba_walk1.png');
-        this.load.image('baba_w2', 'baba_walk2.png');
-        this.load.image('baba_w3', 'baba_walk3.png');
+        // Running Frames
+        for(let i=1; i<=10; i++) {
+            this.load.image(`l${i}`, `l${i}.png`);
+        }
     }
     create() {
         // Create Animations
@@ -145,13 +156,12 @@ class BootScene extends Phaser.Scene {
 class LevelSneak extends Phaser.Scene {
     constructor() { super("LevelSneak"); }
     create() {
-        this.add.text(400, 100, "LEVEL 1: SNEAK OUT", { fontSize: '30px' }).setOrigin(0.5);
-        this.add.text(400, 140, "Avoid Baba. Reach the Door (Right) ->", { fontSize: '20px' }).setOrigin(0.5);
+        this.add.text(400, 100, "LEVEL 1: SNEAK OUT", { fontSize: '30px', color: '#ffffff' }).setOrigin(0.5);
+        this.add.text(400, 140, "Avoid Baba. Reach the Door (Right) ->", { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
         
         this.player = this.physics.add.sprite(100, 400, 'l1').setScale(0.8);
         this.baba = this.physics.add.sprite(500, 400, 'baba_idle').setScale(0.8).play('baba_walk');
         
-        // Baba Patrol
         this.tweens.add({
             targets: this.baba,
             x: 700,
@@ -170,15 +180,9 @@ class LevelSneak extends Phaser.Scene {
         } else {
             this.player.anims.stop();
         }
-
-        // Win Condition
-        if (this.player.x > 750) {
-            this.scene.start("LevelRun");
-        }
-        
-        // Lose Condition (Simple reset)
+        if (this.player.x > 750) this.scene.start("LevelRun");
         if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), this.baba.getBounds())) {
-            this.player.x = 100; // Reset
+            this.player.x = 100; 
         }
     }
 }
@@ -190,7 +194,6 @@ class LevelRun extends Phaser.Scene {
         this.bg = this.add.tileSprite(400, 300, 800, 600, 'city');
         this.player = this.physics.add.sprite(100, 450, 'l1').play('run').setScale(0.8);
         
-        // Obstacles
         this.obstacles = this.physics.add.group();
         this.time.addEvent({ delay: 2000, callback: this.spawnObs, callbackScope: this, loop: true });
         
@@ -199,16 +202,14 @@ class LevelRun extends Phaser.Scene {
             this.cameras.main.shake(100);
         });
 
-        // Timer
-        this.timeLeft = 20; // 20 seconds run
-        this.timerText = this.add.text(16, 16, 'Run: 20', { fontSize: '32px' });
+        this.timeLeft = 20; 
+        this.timerText = this.add.text(16, 16, 'Run: 20', { fontSize: '32px', color: '#fff' });
         this.time.addEvent({ delay: 1000, callback: () => {
             this.timeLeft--;
             this.timerText.setText('Run: ' + this.timeLeft);
             if (this.timeLeft <= 0) this.scene.start("LevelPathao");
         }, loop: true });
     }
-    
     update() {
         this.bg.tilePositionX += 5;
         let cursors = this.input.keyboard.createCursorKeys();
@@ -217,13 +218,11 @@ class LevelRun extends Phaser.Scene {
             this.time.delayedCall(500, () => { this.player.y += 150; });
         }
     }
-    
     spawnObs() {
         let type = Phaser.Math.Between(0, 2);
         let key = ['boss', 'dog_sleep', 'bus_side'][type];
         let obs = this.obstacles.create(800, 450, key).setScale(0.7);
         obs.setVelocityX(-400);
-        // Boss throws files
         if (key === 'boss') {
             let file = this.obstacles.create(obs.x, obs.y, 'files');
             file.setVelocityX(-600);
@@ -236,13 +235,11 @@ class LevelPathao extends Phaser.Scene {
     constructor() { super("LevelPathao"); }
     create() {
         this.add.image(400, 300, 'city').setTint(0x555555);
-        this.add.text(400, 100, "LEVEL 3: NEGOTIATE RIDE", { fontSize: '28px' }).setOrigin(0.5);
+        this.add.text(400, 100, "LEVEL 3: NEGOTIATE RIDE", { fontSize: '28px', color: '#fff' }).setOrigin(0.5);
         
         let rider = this.add.image(400, 300, 'pathao_single').setScale(1.5);
+        this.add.text(400, 450, "Enter Fare (120-150):", { fontSize: '24px', color: '#fff' }).setOrigin(0.5);
         
-        this.add.text(400, 450, "Enter Fare (120-150):", { fontSize: '24px' }).setOrigin(0.5);
-        
-        // HTML Input Overlay
         let input = document.createElement('input');
         input.type = 'number';
         input.style = "position:absolute; top: 500px; left: 50%; transform: translate(-50%); padding: 10px; font-size: 20px;";
@@ -258,7 +255,6 @@ class LevelPathao extends Phaser.Scene {
             if (val < 120) {
                 alert("Rider: 'Dhur mama, eita kisu hoilo?'");
             } else if (val > 150) {
-                // Mob Attack
                 rider.setTexture('pathao_mob');
                 alert("MOB ATTACK: 'Amare lon! Amare lon!' (You got delayed)");
                 input.remove(); btn.remove();
@@ -280,14 +276,12 @@ class LevelDrive extends Phaser.Scene {
         this.player = this.physics.add.sprite(400, 500, 'hunda_top').setScale(0.5);
         this.cursors = this.input.keyboard.createCursorKeys();
         
-        // Spawn Traffic
         this.traffic = this.physics.add.group();
         this.time.addEvent({ delay: 800, callback: () => {
             let x = Phaser.Math.Between(200, 600);
             let bus = this.traffic.create(x, -100, 'bus_top').setScale(0.6).setVelocityY(400);
         }, loop: true });
         
-        // Collectibles
         this.items = this.physics.add.group();
         this.time.addEvent({ delay: 1500, callback: () => {
             let x = Phaser.Math.Between(200, 600);
@@ -295,7 +289,6 @@ class LevelDrive extends Phaser.Scene {
             let item = this.items.create(x, -100, type).setVelocityY(200);
         }, loop: true });
 
-        // Score
         this.score = 0;
         this.scoreText = this.add.text(16, 16, 'Love Items: 0', { fontSize: '24px', fill: '#000', backgroundColor: '#fff' });
 
@@ -319,64 +312,4 @@ class LevelUnlock extends Phaser.Scene {
     constructor() { super("LevelUnlock"); }
     create() {
         this.add.text(400, 200, "YOU ARE BLOCKED!", { fontSize: '40px', color: 'red' }).setOrigin(0.5);
-        this.add.text(400, 300, "Find the Keys to Unlock", { fontSize: '24px' }).setOrigin(0.5);
-        
-        let key = this.add.image(Phaser.Math.Between(100, 700), Phaser.Math.Between(100, 500), 'keys').setInteractive();
-        
-        // Simple Click Minigame
-        key.on('pointerdown', () => {
-            this.add.text(400, 400, "UNBLOCKED!", { fontSize: '30px', color: 'green' }).setOrigin(0.5);
-            this.time.delayedCall(1000, () => this.scene.start("LevelBoss"));
-        });
-        
-        // Move key randomly
-        this.time.addEvent({ delay: 500, callback: () => {
-            key.x = Phaser.Math.Between(100, 700);
-            key.y = Phaser.Math.Between(100, 500);
-        }, loop: true });
-    }
-}
-
-// --- LEVEL 6: BOSS FIGHT ---
-class LevelBoss extends Phaser.Scene {
-    constructor() { super("LevelBoss"); }
-    create() {
-        this.add.image(400, 300, 'city').setTint(0xff0000);
-        this.boss = this.physics.add.sprite(400, 150, 'momo_angry').setScale(0.8);
-        this.player = this.physics.add.sprite(400, 500, 'l1');
-        
-        this.bossHP = 10;
-        this.hpText = this.add.text(16, 16, "Momo Anger: 100%", { fontSize: '32px' });
-
-        // Boss Movement
-        this.tweens.add({ targets: this.boss, x: 600, duration: 2000, yoyo: true, repeat: -1 });
-
-        // Shooting
-        this.input.keyboard.on('keydown-SPACE', () => {
-            let heart = this.physics.add.sprite(this.player.x, this.player.y, 'heart').setVelocityY(-400);
-            this.physics.add.overlap(heart, this.boss, (h, b) => {
-                h.destroy();
-                this.bossHP--;
-                this.hpText.setText("Momo Anger: " + (this.bossHP * 10) + "%");
-                if (this.bossHP <= 0) this.win();
-            });
-        });
-        
-        this.cursors = this.input.keyboard.createCursorKeys();
-    }
-    
-    update() {
-        if (this.cursors.left.isDown) this.player.x -= 5;
-        if (this.cursors.right.isDown) this.player.x += 5;
-    }
-
-    win() {
-        this.physics.pause();
-        this.boss.setTexture('momo_happy');
-        this.hpText.setText("SHE SAID YES!");
-        
-        // Display Win Image Overlay
-        let winImg = this.add.image(400, 300, 'win').setScale(0.1);
-        this.tweens.add({ targets: winImg, scale: 1, duration: 1000, ease: 'Bounce' });
-    }
-}
+        this.add.text(400, 300, "Find the Keys to Unlock", { fontSize: '24px', color: '#fff' }).set
