@@ -73,9 +73,7 @@ loadQuestion();
 document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'o') {
         const ui = document.getElementById('quiz-ui');
-        // Only trigger if quiz is still visible
         if (ui.style.display !== 'none') {
-            console.log("DEBUG MODE: SKIPPING QUIZ");
             ui.style.display = 'none';
             document.getElementById('game-wrapper').style.display = 'block';
             startGame();
@@ -202,55 +200,68 @@ class IntroScene extends Phaser.Scene {
     }
 }
 
-// --- LEVEL 1: THE SNEAK HOUSE ---
+// --- LEVEL 1: THE REAL HOME LAYOUT ---
 class LevelSneak extends Phaser.Scene {
     constructor() { super("LevelSneak"); }
     create() {
         if (this.cache.audio.exists('bgm')) { this.sound.play('bgm', { loop: true, volume: 0.5 }); }
 
-        // MAP: Stretch background to fill
+        // BACKGROUND: Home Map
+        // We stretch it slightly to fill 800x600 game window
         this.add.image(400, 300, 'home').setDisplaySize(800, 600);
 
-        this.add.text(400, 30, "SNEAK TO THE FRONT DOOR (Bottom Right)", { fontSize: '20px', color: '#fff', backgroundColor: '#000' }).setOrigin(0.5);
+        this.add.text(400, 30, "SNEAK TO THE FRONT DOOR (Bottom Right)", { fontSize: '20px', color: '#fff', backgroundColor: '#000' }).setOrigin(0.5).setDepth(1000);
         
-        // WALLS (Invisible Physics Bodies to match the floorplan)
+        // --- WALLS (Invisible) ---
+        // These match the lines in your home.jpg floorplan
         this.walls = this.physics.add.staticGroup();
-        // Vertical Divider Top
-        this.walls.add(this.add.rectangle(395, 100, 10, 250)); // Wall betw Bed/Living
-        // Vertical Divider Bottom
-        this.walls.add(this.add.rectangle(395, 500, 10, 250)); // Wall betw TV/Entrance
-        // Horizontal Divider Left
-        this.walls.add(this.add.rectangle(200, 290, 400, 10)); 
-        // Horizontal Divider Right
-        this.walls.add(this.add.rectangle(600, 290, 400, 10));
-        // Make walls invisible
+        
+        // 1. Vertical Spine (Separating Left Rooms from Hallway)
+        this.walls.add(this.add.rectangle(420, 150, 10, 300)); // Top half (Bedroom wall)
+        this.walls.add(this.add.rectangle(420, 500, 10, 200)); // Bottom half (TV room wall)
+        
+        // 2. Horizontal Spine (Separating Top Rooms from Bottom Rooms)
+        this.walls.add(this.add.rectangle(200, 320, 400, 10)); // Left side (Bed/TV separator)
+        this.walls.add(this.add.rectangle(600, 320, 400, 10)); // Right side (Kitchen/Entrance separator)
+
+        // 3. Outer Borders
+        this.walls.add(this.add.rectangle(400, 5, 800, 10)); // Top
+        this.walls.add(this.add.rectangle(400, 595, 800, 10)); // Bottom
+        this.walls.add(this.add.rectangle(5, 300, 10, 600)); // Left
+        this.walls.add(this.add.rectangle(795, 300, 10, 600)); // Right
+
+        // Hide walls
         this.walls.children.iterate((child) => { child.setVisible(false); });
 
-        // PLAYER (Starts in Bedroom Top Left)
-        this.player = this.physics.add.sprite(100, 100, 'l1').setScale(0.5);
+        // --- PLAYER ---
+        // Start in Bedroom (Top Left)
+        this.player = this.physics.add.sprite(150, 150, 'l1').setScale(0.5);
         this.player.body.setSize(30, 30).setOffset(25, 100);
         this.player.setCollideWorldBounds(true);
         this.physics.add.collider(this.player, this.walls);
 
-        // BABA (Guard)
-        this.baba = this.physics.add.sprite(600, 100, 'baba_idle').setScale(0.6).play('baba_walk');
+        // --- BABA (The Guard) ---
+        // Start in Kitchen (Top Right)
+        this.baba = this.physics.add.sprite(650, 150, 'baba_idle').setScale(0.6).play('baba_walk');
         this.baba.body.setSize(40, 40).setOffset(20, 100);
 
-        // BABA PATROL ROUTINE (Rooms)
-        // 1. Kitchen (600, 100) -> Hallway (400, 300) -> TV Room (150, 500) -> Hallway -> Bedroom (150, 100)
+        // --- PATROL LOGIC (Visiting Rooms) ---
+        // Coordinates based on 800x600 home.jpg layout
         this.patrolPoints = [
-            { x: 400, y: 300 }, // Hallway Center
-            { x: 150, y: 500 }, // TV Room
-            { x: 400, y: 300 }, // Back to Hallway
-            { x: 650, y: 500 }, // Front Door Area (Scary!)
-            { x: 400, y: 300 }, // Back to Hallway
-            { x: 600, y: 100 }  // Kitchen
+            { x: 500, y: 300 }, // Hallway Top
+            { x: 500, y: 500 }, // Hallway Bottom
+            { x: 200, y: 500 }, // TV Room (Bottom Left)
+            { x: 500, y: 500 }, // Back to Hallway
+            { x: 700, y: 500 }, // Near Entrance (Scary!)
+            { x: 500, y: 300 }, // Hallway Top
+            { x: 650, y: 150 }  // Kitchen (Top Right)
         ];
         this.currentPoint = 0;
         this.moveBabaToNextPoint();
 
-        // WIN ZONE (Bottom Right Door)
-        this.exitZone = this.add.rectangle(750, 550, 50, 50, 0x00ff00, 0.3);
+        // --- WIN ZONE ---
+        // Double Doors at Bottom Right
+        this.exitZone = this.add.rectangle(750, 500, 60, 100, 0x00ff00, 0.0); // Invisible trigger
         this.physics.add.existing(this.exitZone, true);
 
         this.physics.add.overlap(this.player, this.exitZone, () => {
@@ -263,19 +274,19 @@ class LevelSneak extends Phaser.Scene {
 
     moveBabaToNextPoint() {
         let p = this.patrolPoints[this.currentPoint];
-        this.physics.moveTo(this.baba, p.x, p.y, 100); // Speed 100
+        this.physics.moveTo(this.baba, p.x, p.y, 120); // Speed
 
-        // Check if reached target
+        // Check distance to target
         this.time.addEvent({
             delay: 100,
             loop: true,
             callback: () => {
-                if (Phaser.Math.Distance.Between(this.baba.x, this.baba.y, p.x, p.y) < 10) {
+                if (this.baba && this.baba.body && Phaser.Math.Distance.Between(this.baba.x, this.baba.y, p.x, p.y) < 10) {
                     this.baba.body.reset(p.x, p.y); // Stop
                     this.currentPoint++;
                     if (this.currentPoint >= this.patrolPoints.length) this.currentPoint = 0;
-                    // Wait 2 seconds then move again
-                    this.time.delayedCall(2000, () => this.moveBabaToNextPoint()); 
+                    // Wait 1.5 seconds in the room before moving
+                    this.time.delayedCall(1500, () => this.moveBabaToNextPoint()); 
                     return false; // Stop checking
                 }
             }
@@ -284,7 +295,7 @@ class LevelSneak extends Phaser.Scene {
 
     update() {
         this.player.setVelocity(0);
-        let speed = 180;
+        let speed = 200;
         let left = this.cursors.left.isDown || (this.leftBtn && this.leftBtn.isDown);
         let right = this.cursors.right.isDown || (this.rightBtn && this.rightBtn.isDown);
         let up = this.cursors.up.isDown || (this.upBtn && this.upBtn.isDown);
@@ -301,11 +312,10 @@ class LevelSneak extends Phaser.Scene {
         this.player.setDepth(this.player.y);
         this.baba.setDepth(this.baba.y);
 
-        // LOSE CONDITION
+        // CAUGHT!
         if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), this.baba.getBounds())) {
             this.cameras.main.shake(200);
-            this.add.text(this.player.x, this.player.y - 50, "CAUGHT!", { color: 'red', fontSize: '20px', backgroundColor: 'black' });
-            this.player.x = 100; this.player.y = 100; // Reset to Bed
+            this.player.x = 150; this.player.y = 150; // Send back to Bedroom
         }
     }
 }
