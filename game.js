@@ -43,7 +43,7 @@ const mathProblems = [
     { q: "Integral of 2x?", a: ["x^2", "2x^2", "x"], c: 0 }
 ];
 
-// RELATIONSHIP TRAP DATA (BOSS LEVEL)
+// BOSS TRAP QUESTIONS
 const trapQuestions = [
     { q: "Do I look fat in this dress?", a: ["No, you look perfect", "Maybe a little", "I like curves"], c: 0 },
     { q: "Who is prettier, me or your ex?", a: ["You, obviously", "My ex was okay", "Different types"], c: 0 },
@@ -125,8 +125,6 @@ function addMobileControls(scene, actionText = 'O') {
     scene.rightBtn = scene.add.text(200, 500, '>', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
     scene.upBtn = scene.add.text(125, 420, '^', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
     scene.downBtn = scene.add.text(125, 500, 'v', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
-    
-    // Action Button
     scene.actionBtn = scene.add.text(650, 480, actionText, actionStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
 
     scene.leftBtn.isDown = false; scene.rightBtn.isDown = false;
@@ -381,21 +379,22 @@ class LevelRun extends Phaser.Scene {
     }
 }
 
+// --- LEVEL 3: COLLECT (FREE MOVEMENT) ---
 class LevelCollect extends Phaser.Scene {
     constructor() { super("LevelCollect"); }
     create() {
         this.bg = this.add.tileSprite(400, 300, 800, 600, 'city');
         this.add.text(400, 100, "Collect 10 Flowers! Press 'V' or 'O'", { fontSize: '24px', backgroundColor: '#000' }).setOrigin(0.5);
+        
+        // FREE MOVEMENT SETUP (No Gravity)
         this.player = this.physics.add.sprite(100, 450, 'l1').play('run').setScale(0.8).setDepth(100);
-        this.player.setGravityY(800);
-        this.player.setCollideWorldBounds(true); // FIX: Prevents falling to infinity
-        this.ground = this.add.rectangle(400, 580, 800, 50, 0x000000, 0); // Thicker ground
-        this.physics.add.existing(this.ground, true);
-        this.physics.add.collider(this.player, this.ground);
+        this.player.setCollideWorldBounds(true);
         
         this.flowers = this.physics.add.group();
         this.time.addEvent({ delay: 1500, callback: () => {
-            let f = this.flowers.create(800, 500, 'flower').setScale(0.15).setVelocityX(-200);
+            // Spawn flowers at random Y heights
+            let yPos = Phaser.Math.Between(300, 550);
+            let f = this.flowers.create(800, yPos, 'flower').setScale(0.15).setVelocityX(-200);
             f.body.setAllowGravity(false);
         }, loop: true });
         
@@ -413,9 +412,11 @@ class LevelCollect extends Phaser.Scene {
                 this.scoreText.setText('Flowers: ' + this.score + '/10');
                 if (this.score >= 10) {
                     // SPAWN BUS
-                    this.bus = this.physics.add.sprite(750, 450, 'bus_side').setScale(0.5).setImmovable(true);
-                    this.bus.body.setAllowGravity(false);
-                    this.add.text(600, 350, "GET IN BUS ->", { fontSize: '24px', backgroundColor: 'blue' });
+                    this.bus = this.physics.add.sprite(700, 400, 'bus_side').setScale(0.5).setImmovable(true);
+                    this.bus.setDepth(90);
+                    this.add.text(600, 300, "WALK TO BUS ->", { fontSize: '24px', backgroundColor: 'blue' });
+                    
+                    // Trigger Next Level on Collision
                     this.physics.add.overlap(this.player, this.bus, () => {
                         this.scene.start("LevelBus");
                     });
@@ -425,6 +426,19 @@ class LevelCollect extends Phaser.Scene {
     }
     update() {
         this.bg.tilePositionX += 5;
+        
+        // FREE MOVEMENT LOGIC
+        this.player.setVelocity(0);
+        let speed = 250;
+        let left = this.cursors.left.isDown || (this.leftBtn && this.leftBtn.isDown);
+        let right = this.cursors.right.isDown || (this.rightBtn && this.rightBtn.isDown);
+        let up = this.cursors.up.isDown || (this.upBtn && this.upBtn.isDown);
+        let down = this.cursors.down.isDown || (this.downBtn && this.downBtn.isDown);
+
+        if (left) this.player.setVelocityX(-speed);
+        if (right) this.player.setVelocityX(speed);
+        if (up) this.player.setVelocityY(-speed);
+        if (down) this.player.setVelocityY(speed);
     }
 }
 
@@ -433,7 +447,6 @@ class LevelBus extends Phaser.Scene {
     create() {
         this.road = this.add.tileSprite(400, 300, 800, 600, 'road');
         this.player = this.physics.add.sprite(400, 500, 'bus_top').setScale(0.6);
-        // Smaller hitbox for bus
         this.player.body.setSize(60, 150);
         this.cursors = this.input.keyboard.createCursorKeys();
         this.hits = 0;
@@ -507,7 +520,7 @@ class LevelBike extends Phaser.Scene {
     create() {
         this.road = this.add.tileSprite(400, 300, 800, 600, 'road');
         this.player = this.physics.add.sprite(400, 500, 'hunda_top').setScale(0.5);
-        this.player.body.setSize(40, 100); // Smaller Hitbox
+        this.player.body.setSize(40, 100);
         this.cursors = this.input.keyboard.createCursorKeys();
         this.traffic = this.physics.add.group();
         this.time.addEvent({ delay: 800, callback: () => {
@@ -517,11 +530,10 @@ class LevelBike extends Phaser.Scene {
         }, loop: true });
         this.add.text(10, 10, "Distance: 200m", { fontSize: '20px', backgroundColor: '#000' });
         
-        // Physics Hit check
+        // No damage, just dodge feel
         this.physics.add.overlap(this.player, this.traffic, (p, t) => {
              t.destroy();
              this.cameras.main.shake(200);
-             // No damage for bike, just shake/slow, or add damage logic if needed
         });
 
         this.time.delayedCall(10000, () => this.scene.start("LevelBoss"));
