@@ -1,8 +1,8 @@
 // ==========================================
-// PART 1: THE PSYCHOPATH & DAD QUIZ
+// PART 1: THE PSYCHOPATH & PRINCESS QUIZ (EXPANDED)
 // ==========================================
 const quizData = [
-    // Phase 1: Psychopath Test
+    // --- PHASE 1: THE PSYCHOPATH SCREENING (10 Questions) ---
     { q: "You see a child trip. Do you laugh?", a: ["A. Yes, loudly", "B. Internal Chuckle", "C. No, I help them"] },
     { q: "Is chaos a ladder or a headache?", a: ["A. Ladder", "B. Headache"] },
     { q: "Do you manipulate situations for fun?", a: ["A. Often", "B. Sometimes", "C. Never"] },
@@ -11,22 +11,31 @@ const quizData = [
     { q: "Do you get bored of 'nice' people?", a: ["A. Yes, they are boring", "B. No, they are safe"] },
     { q: "Is revenge a dish best served cold?", a: ["A. Yes", "B. Frozen solid"] },
     { q: "Can you lie without blinking?", a: ["A. Easy", "B. Try me"] },
+    { q: "Do you plan conversations in advance?", a: ["A. Always", "B. No, I wing it"] },
     { q: "Are you the 'Psychopath' in this relationship?", a: ["A. Yes", "B. 100%"] },
     
-    // The Pivot Question
+    // --- PHASE 2: THE PIVOT ---
     { q: "WAIT. Recalibrating... Are you the Boyfriend?", a: ["A. No", "B. I am the MAN"] },
     
-    // Phase 2: Good Dad Test
-    { q: "Do you act strong but want to be held?", a: ["A. Yes", "B. Secretly"] },
-    { q: "Is your partner a 'Princess'?", a: ["A. 100%", "B. 200%", "C. She is the Queen"] },
-    { q: "Do you pay the bills while she looks away?", a: ["A. Always", "B. Yes"] },
-    { q: "Who kills the spider?", a: ["A. Me", "B. I am the Warrior"] },
-    { q: "Do you carry the heavy bags?", a: ["A. Yes", "B. My back hurts"] },
-    { q: "Does she steal your hoodies?", a: ["A. Yes", "B. All of them"] },
-    { q: "Are you the 'Responsible One'?", a: ["A. Trying", "B. Yes"] },
-    { q: "Do you think your efforts go unpaid?", a: ["A. Sometimes", "B. Often"] },
-    { q: "Is she actually a baby in disguise?", a: ["A. Yes", "B. Confirmed"] },
-    { q: "Diagnosis Ready. Proceed?", a: ["[ PROCEED TO GAME ]"] }
+    // --- PHASE 3: THE ROAST OF THE BOYFRIEND (14 Questions) ---
+    { q: "Who screams when they see a cockroach?", a: ["A. Me", "B. Him (High pitch scream)"] },
+    { q: "If he gets a simple cold, what happens?", a: ["A. He takes meds", "B. He writes his Last Will & Testament"] },
+    { q: "Who actually carries the heavy grocery bags?", a: ["A. Me, obviously", "B. His back hurts"] },
+    { q: "When getting ready to go out, who takes longer?", a: ["A. Me", "B. Him (He has to fix his hair)"] },
+    { q: "Who is the 'Little Spoon' when cuddling?", a: ["A. Me", "B. Him (He needs to be held)"] },
+    { q: "When he gets hungry, does he become...", a: ["A. A normal human", "B. A Drama Queen"] },
+    { q: "Who checks the scary noise at night?", a: ["A. Me with a bat", "B. He hides under the blanket"] },
+    { q: "How much attention does he require daily?", a: ["A. Standard amount", "B. Toddler Level"] },
+    { q: "Does he steal your skincare products?", a: ["A. No", "B. Yes, and he denies it"] },
+    { q: "If you are both tired, who complains more?", a: ["A. Me", "B. Him (He whines)"] },
+    { q: "Who is more dramatic about minor injuries?", a: ["A. Me", "B. Him (Papercut = Surgery)"] },
+    { q: "Does he require a specific pillow to sleep?", a: ["A. No", "B. Yes, he is delicate"] },
+    
+    // --- PHASE 4: THE DIAGNOSIS ---
+    { q: "FINAL DIAGNOSIS: Is your boyfriend a PRINCESS?", a: ["A. Yes", "B. 1000% Yes"] },
+    
+    // --- PHASE 5: THE GLITCH ---
+    { q: "CALCULATING FINAL RESULT...", a: ["[ VIEW TRUTH ]"] }
 ];
 
 let qIndex = 0;
@@ -42,16 +51,10 @@ function loadQuestion() {
     let data = quizData[qIndex];
     qBox.innerText = data.q;
     oBox.innerHTML = "";
-    
-    // Create a Button for each Answer Option
     data.a.forEach(ans => {
         let btn = document.createElement('button');
         btn.innerText = ans;
-        // On Click: Move to next question
-        btn.onclick = () => { 
-            qIndex++; 
-            loadQuestion(); 
-        };
+        btn.onclick = () => { qIndex++; loadQuestion(); };
         oBox.appendChild(btn);
     });
 }
@@ -60,20 +63,21 @@ function endQuiz() {
     qBox.innerText = "CALCULATING PATERNAL INSTINCTS...";
     oBox.innerHTML = "";
     setTimeout(() => {
+        // The Final Punchline
         qBox.innerHTML = "RESULT: <br><span style='font-size:30px; color:white; text-shadow:0 0 10px white;'>YOU ARE A GOOD DAD.</span>";
         setTimeout(() => {
-            document.body.classList.add('glitch'); // Trigger Glitch Effect
+            document.body.classList.add('glitch');
             setTimeout(() => {
                 document.body.classList.remove('glitch');
-                ui.style.display = 'none'; // Hide Quiz
-                document.getElementById('game-wrapper').style.display = 'block'; // Show Game
-                startGame(); // LAUNCH PHASER
+                ui.style.display = 'none';
+                document.getElementById('game-wrapper').style.display = 'block';
+                startGame(); // Starts Phaser + Music
             }, 1500);
-        }, 2000);
+        }, 3000);
     }, 2000);
 }
 
-loadQuestion(); // Start Quiz on Load
+loadQuestion();
 
 // ==========================================
 // PART 2: THE GAME ENGINE (PHASER JS)
@@ -97,16 +101,16 @@ class BootScene extends Phaser.Scene {
     preload() {
         this.load.path = 'assets/';
 
+        // AUDIO LOADING
+        this.load.audio('bgm', 'bgm.mp3'); // Make sure bgm.mp3 is in assets folder!
+
         // Backgrounds
         this.load.image('city', 'evening city.jpg');
         this.load.image('road', 'vangarasta.jpg');
         
-        // Characters & Vehicles
-        this.load.image('hunda_side', 'hunda.png');
+        // Characters
         this.load.image('hunda_top', 'top_bike.png');
         this.load.image('boss', 'boss-office.png');
-        
-        // Baba (Dad)
         this.load.image('baba_idle', 'baba.png');
         this.load.image('baba_w1', 'walkbaba.png');
         this.load.image('baba_w2', 'walkbaba1.png');
@@ -116,7 +120,7 @@ class BootScene extends Phaser.Scene {
         this.load.image('pathao_single', 'bikeride.png');
         this.load.image('pathao_mob', 'grabarm-removebg-preview.png');
         
-        // Enemies & Obstacles
+        // Enemies
         this.load.image('dog_sleep', 'kuttasleep.jpg');
         this.load.image('dog_bark', 'kuttavau.png');
         this.load.image('bus_side', 'poristhanside.jpg');
@@ -126,7 +130,7 @@ class BootScene extends Phaser.Scene {
         this.load.image('momo_angry', 'momo-boss.jpg');
         this.load.image('momo_happy', 'momo-happy.jpg');
         
-        // Items & Projectiles
+        // Items
         this.load.image('files', 'files.png'); 
         this.load.image('fire', 'golla.png');
         this.load.image('heart', 'heart.png');
@@ -136,9 +140,7 @@ class BootScene extends Phaser.Scene {
         this.load.image('win', 'win-removebg-preview.png');
         
         // Running Frames
-        for(let i=1; i<=10; i++) {
-            this.load.image(`l${i}`, `l${i}.png`);
-        }
+        for(let i=1; i<=10; i++) this.load.image(`l${i}`, `l${i}.png`);
     }
     create() {
         // Create Animations
@@ -161,10 +163,14 @@ class BootScene extends Phaser.Scene {
     }
 }
 
-// --- LEVEL 1: SNEAK OUT ---
+// --- LEVEL 1: SNEAK OUT (MUSIC STARTS HERE) ---
 class LevelSneak extends Phaser.Scene {
     constructor() { super("LevelSneak"); }
     create() {
+        // START MUSIC
+        let music = this.sound.add('bgm');
+        music.play({ loop: true, volume: 0.5 });
+
         this.add.text(400, 100, "LEVEL 1: SNEAK OUT", { fontSize: '30px', color: '#ffffff' }).setOrigin(0.5);
         this.add.text(400, 140, "Avoid Baba. Reach the Door (Right) ->", { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
         
@@ -196,7 +202,7 @@ class LevelSneak extends Phaser.Scene {
     }
 }
 
-// --- LEVEL 2: THE RUN (Side Scroller) ---
+// --- LEVEL 2: THE RUN ---
 class LevelRun extends Phaser.Scene {
     constructor() { super("LevelRun"); }
     create() {
@@ -277,7 +283,7 @@ class LevelPathao extends Phaser.Scene {
     }
 }
 
-// --- LEVEL 4: THE DRIVE (Top Down) ---
+// --- LEVEL 4: THE DRIVE ---
 class LevelDrive extends Phaser.Scene {
     constructor() { super("LevelDrive"); }
     create() {
@@ -316,7 +322,7 @@ class LevelDrive extends Phaser.Scene {
     }
 }
 
-// --- LEVEL 5: THE UNBLOCK (Pattern) ---
+// --- LEVEL 5: THE UNBLOCK ---
 class LevelUnlock extends Phaser.Scene {
     constructor() { super("LevelUnlock"); }
     create() {
