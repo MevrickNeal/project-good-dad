@@ -2,28 +2,31 @@
 // PART 1: THE PSYCHOPATH & DAD QUIZ
 // ==========================================
 const quizData = [
-    { q: "You see a child trip. Do you laugh?", a: ["Yes", "Internal Chuckle"] },
-    { q: "Is chaos a ladder or a headache?", a: ["Ladder", "Headache"] },
-    { q: "Do you manipulate situations for fun?", a: ["Often", "Sometimes"] },
-    { q: "If you kill a bug, do you feel sad?", a: ["No", "Maybe"] },
-    { q: "Are emotions inefficient?", a: ["Yes", "Depends"] },
-    { q: "Do you get bored of 'nice' people?", a: ["Yes", "Always"] },
-    { q: "Is revenge a dish best served cold?", a: ["Yes", "Frozen"] },
-    { q: "Can you lie without blinking?", a: ["Easy", "Try me"] },
-    { q: "Are you the 'Psychopath' in this relationship?", a: ["Yes", "100%"] },
-    { q: "WAIT. Recalibrating... Are you the Boyfriend?", a: ["No", "I am the MAN"] },
+    // Phase 1: Psychopath Test
+    { q: "You see a child trip. Do you laugh?", a: ["A. Yes, loudly", "B. Internal Chuckle", "C. No, I help them"] },
+    { q: "Is chaos a ladder or a headache?", a: ["A. Ladder", "B. Headache"] },
+    { q: "Do you manipulate situations for fun?", a: ["A. Often", "B. Sometimes", "C. Never"] },
+    { q: "If you kill a bug, do you feel sad?", a: ["A. No", "B. Maybe a little"] },
+    { q: "Are emotions inefficient?", a: ["A. Yes", "B. Depends on the emotion"] },
+    { q: "Do you get bored of 'nice' people?", a: ["A. Yes, they are boring", "B. No, they are safe"] },
+    { q: "Is revenge a dish best served cold?", a: ["A. Yes", "B. Frozen solid"] },
+    { q: "Can you lie without blinking?", a: ["A. Easy", "B. Try me"] },
+    { q: "Are you the 'Psychopath' in this relationship?", a: ["A. Yes", "B. 100%"] },
+    
+    // The Pivot Question
+    { q: "WAIT. Recalibrating... Are you the Boyfriend?", a: ["A. No", "B. I am the MAN"] },
     
     // Phase 2: Good Dad Test
-    { q: "Do you act strong but want to be held?", a: ["Yes", "Secretly"] },
-    { q: "Is your partner a 'Princess'?", a: ["100%", "200%"] },
-    { q: "Do you pay the bills while she looks away?", a: ["Always", "Yes"] },
-    { q: "Who kills the spider?", a: ["Me", "I am the Warrior"] },
-    { q: "Do you carry the heavy bags?", a: ["Yes", "My back hurts"] },
-    { q: "Does she steal your hoodies?", a: ["Yes", "All of them"] },
-    { q: "Are you the 'Responsible One'?", a: ["Trying", "Yes"] },
-    { q: "Do you think your efforts go unpaid?", a: ["Sometimes", "Often"] },
-    { q: "Is she actually a baby in disguise?", a: ["Yes", "Confirmed"] },
-    { q: "Diagnosis Ready. Proceed?", a: ["Proceed", "Go"] }
+    { q: "Do you act strong but want to be held?", a: ["A. Yes", "B. Secretly"] },
+    { q: "Is your partner a 'Princess'?", a: ["A. 100%", "B. 200%", "C. She is the Queen"] },
+    { q: "Do you pay the bills while she looks away?", a: ["A. Always", "B. Yes"] },
+    { q: "Who kills the spider?", a: ["A. Me", "B. I am the Warrior"] },
+    { q: "Do you carry the heavy bags?", a: ["A. Yes", "B. My back hurts"] },
+    { q: "Does she steal your hoodies?", a: ["A. Yes", "B. All of them"] },
+    { q: "Are you the 'Responsible One'?", a: ["A. Trying", "B. Yes"] },
+    { q: "Do you think your efforts go unpaid?", a: ["A. Sometimes", "B. Often"] },
+    { q: "Is she actually a baby in disguise?", a: ["A. Yes", "B. Confirmed"] },
+    { q: "Diagnosis Ready. Proceed?", a: ["[ PROCEED TO GAME ]"] }
 ];
 
 let qIndex = 0;
@@ -39,10 +42,16 @@ function loadQuestion() {
     let data = quizData[qIndex];
     qBox.innerText = data.q;
     oBox.innerHTML = "";
+    
+    // Create a Button for each Answer Option
     data.a.forEach(ans => {
         let btn = document.createElement('button');
         btn.innerText = ans;
-        btn.onclick = () => { qIndex++; loadQuestion(); };
+        // On Click: Move to next question
+        btn.onclick = () => { 
+            qIndex++; 
+            loadQuestion(); 
+        };
         oBox.appendChild(btn);
     });
 }
@@ -51,20 +60,20 @@ function endQuiz() {
     qBox.innerText = "CALCULATING PATERNAL INSTINCTS...";
     oBox.innerHTML = "";
     setTimeout(() => {
-        qBox.innerHTML = "RESULT: <br><span style='font-size:30px; color:white'>YOU ARE A GOOD DAD.</span>";
+        qBox.innerHTML = "RESULT: <br><span style='font-size:30px; color:white; text-shadow:0 0 10px white;'>YOU ARE A GOOD DAD.</span>";
         setTimeout(() => {
-            document.body.classList.add('glitch');
+            document.body.classList.add('glitch'); // Trigger Glitch Effect
             setTimeout(() => {
                 document.body.classList.remove('glitch');
-                ui.style.display = 'none';
-                document.getElementById('game-wrapper').style.display = 'block';
-                startGame();
+                ui.style.display = 'none'; // Hide Quiz
+                document.getElementById('game-wrapper').style.display = 'block'; // Show Game
+                startGame(); // LAUNCH PHASER
             }, 1500);
         }, 2000);
     }, 2000);
 }
 
-loadQuestion();
+loadQuestion(); // Start Quiz on Load
 
 // ==========================================
 // PART 2: THE GAME ENGINE (PHASER JS)
@@ -82,7 +91,7 @@ function startGame() {
     new Phaser.Game(config);
 }
 
-// --- SCENE 0: ASSET LOADING (MAPPED TO YOUR EXACT FILENAMES) ---
+// --- SCENE 0: ASSET LOADING ---
 class BootScene extends Phaser.Scene {
     constructor() { super("Boot"); }
     preload() {
@@ -312,4 +321,56 @@ class LevelUnlock extends Phaser.Scene {
     constructor() { super("LevelUnlock"); }
     create() {
         this.add.text(400, 200, "YOU ARE BLOCKED!", { fontSize: '40px', color: 'red' }).setOrigin(0.5);
-        this.add.text(400, 300, "Find the Keys to Unlock", { fontSize: '24px', color: '#fff' }).set
+        this.add.text(400, 300, "Find the Keys to Unlock", { fontSize: '24px', color: '#fff' }).setOrigin(0.5);
+        
+        let key = this.add.image(Phaser.Math.Between(100, 700), Phaser.Math.Between(100, 500), 'keys').setInteractive();
+        
+        key.on('pointerdown', () => {
+            this.add.text(400, 400, "UNBLOCKED!", { fontSize: '30px', color: 'green' }).setOrigin(0.5);
+            this.time.delayedCall(1000, () => this.scene.start("LevelBoss"));
+        });
+        
+        this.time.addEvent({ delay: 500, callback: () => {
+            key.x = Phaser.Math.Between(100, 700);
+            key.y = Phaser.Math.Between(100, 500);
+        }, loop: true });
+    }
+}
+
+// --- LEVEL 6: BOSS FIGHT ---
+class LevelBoss extends Phaser.Scene {
+    constructor() { super("LevelBoss"); }
+    create() {
+        this.add.image(400, 300, 'city').setTint(0xff0000);
+        this.boss = this.physics.add.sprite(400, 150, 'momo_angry').setScale(0.8);
+        this.player = this.physics.add.sprite(400, 500, 'l1');
+        
+        this.bossHP = 10;
+        this.hpText = this.add.text(16, 16, "Momo Anger: 100%", { fontSize: '32px', color: '#fff' });
+
+        this.tweens.add({ targets: this.boss, x: 600, duration: 2000, yoyo: true, repeat: -1 });
+
+        this.input.keyboard.on('keydown-SPACE', () => {
+            let heart = this.physics.add.sprite(this.player.x, this.player.y, 'heart').setVelocityY(-400);
+            this.physics.add.overlap(heart, this.boss, (h, b) => {
+                h.destroy();
+                this.bossHP--;
+                this.hpText.setText("Momo Anger: " + (this.bossHP * 10) + "%");
+                if (this.bossHP <= 0) this.win();
+            });
+        });
+        
+        this.cursors = this.input.keyboard.createCursorKeys();
+    }
+    update() {
+        if (this.cursors.left.isDown) this.player.x -= 5;
+        if (this.cursors.right.isDown) this.player.x += 5;
+    }
+    win() {
+        this.physics.pause();
+        this.boss.setTexture('momo_happy');
+        this.hpText.setText("SHE SAID YES!");
+        let winImg = this.add.image(400, 300, 'win').setScale(0.1);
+        this.tweens.add({ targets: winImg, scale: 1, duration: 1000, ease: 'Bounce' });
+    }
+}
