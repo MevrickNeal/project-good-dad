@@ -34,6 +34,15 @@ const ui = document.getElementById('quiz-ui');
 const qBox = document.getElementById('question-display');
 const oBox = document.getElementById('options-display');
 
+// MATH PENALTY DATA
+const mathProblems = [
+    { q: "Calculate Torque: Force=10N, Radius=2m", a: ["20 Nm", "5 Nm", "12 Nm"], c: 0 },
+    { q: "Derivative of x^2?", a: ["x", "2x", "x^3"], c: 1 },
+    { q: "Ohm's Law?", a: ["V=IR", "V=I/R", "V=R/I"], c: 0 },
+    { q: "Binary for 5?", a: ["100", "110", "101"], c: 2 },
+    { q: "Integral of 2x?", a: ["x^2", "2x^2", "x"], c: 0 }
+];
+
 function loadQuestion() {
     if (qIndex >= quizData.length) {
         endQuiz();
@@ -69,7 +78,7 @@ function endQuiz() {
 
 loadQuestion();
 
-// --- DEBUG SHORTCUT (PRESS 'O' TO SKIP) ---
+// DEBUG SHORTCUT 'O'
 document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'o') {
         const ui = document.getElementById('quiz-ui');
@@ -82,8 +91,12 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ==========================================
-// PART 2: THE GAME ENGINE
+// PART 2: PHASER GAME ENGINE
 // ==========================================
+
+// GLOBAL VARIABLES
+var GLOBAL_TIMER = 300; // 5 Minutes (in seconds)
+var HAS_FLOWERS = false;
 
 function startGame() {
     const config = {
@@ -92,11 +105,12 @@ function startGame() {
         height: 600,
         parent: 'game-wrapper',
         physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
-        scene: [BootScene, IntroScene, LevelSneak, LevelRun, LevelPathao, LevelDrive, LevelUnlock, LevelBoss]
+        scene: [BootScene, UIScene, IntroScene, LevelSneak, LevelRun, LevelCollect, LevelBus, LevelBlock, LevelBargain, LevelBike, LevelBoss]
     };
     new Phaser.Game(config);
 }
 
+// --- UI HELPERS ---
 function addMobileControls(scene) {
     const btnStyle = { fontSize: '40px', backgroundColor: '#00ff41', color: '#000', padding: { x: 10, y: 10 } };
     const hitArea = new Phaser.Geom.Rectangle(0, 0, 60, 60);
@@ -105,12 +119,10 @@ function addMobileControls(scene) {
     scene.rightBtn = scene.add.text(150, 500, '>', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(999);
     scene.upBtn = scene.add.text(100, 440, '^', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(999);
     scene.downBtn = scene.add.text(100, 500, 'v', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(999);
-    scene.actionBtn = scene.add.text(700, 500, 'A', { ...btnStyle, backgroundColor: '#ff0000', color: '#fff' }).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(999);
+    scene.actionBtn = scene.add.text(700, 500, 'V', { ...btnStyle, backgroundColor: '#ff0000', color: '#fff' }).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(999); // 'V' for interact
 
-    scene.leftBtn.isDown = false;
-    scene.rightBtn.isDown = false;
-    scene.upBtn.isDown = false;
-    scene.downBtn.isDown = false;
+    scene.leftBtn.isDown = false; scene.rightBtn.isDown = false;
+    scene.upBtn.isDown = false; scene.downBtn.isDown = false;
     scene.actionBtn.isDown = false;
 
     scene.input.on('gameobjectdown', (pointer, obj) => {
@@ -130,6 +142,7 @@ function addMobileControls(scene) {
     });
 }
 
+// --- SCENE: BOOT ---
 class BootScene extends Phaser.Scene {
     constructor() { super("Boot"); }
     preload() {
@@ -176,10 +189,35 @@ class BootScene extends Phaser.Scene {
             frames: [ { key: 'baba_w1' }, { key: 'baba_w2' }, { key: 'baba_w3' } ],
             frameRate: 6, repeat: -1
         });
+        // Start UI Scene (Timer) and Game
+        this.scene.launch("UIScene");
         this.scene.start("IntroScene");
     }
 }
 
+// --- SCENE: GLOBAL UI (TIMER) ---
+class UIScene extends Phaser.Scene {
+    constructor() { super("UIScene"); }
+    create() {
+        this.timerText = this.add.text(600, 10, 'TIME: 5:00', { fontSize: '32px', color: '#fff', fontStyle: 'bold', backgroundColor: '#000' }).setScrollFactor(0);
+        this.time.addEvent({
+            delay: 1000,
+            loop: true,
+            callback: () => {
+                GLOBAL_TIMER--;
+                let min = Math.floor(GLOBAL_TIMER / 60);
+                let sec = GLOBAL_TIMER % 60;
+                this.timerText.setText(`TIME: ${min}:${sec < 10 ? '0'+sec : sec}`);
+                if (GLOBAL_TIMER <= 0) {
+                    alert("TIME UP! SHE LEFT!");
+                    location.reload();
+                }
+            }
+        });
+    }
+}
+
+// --- SCENE: INTRO ---
 class IntroScene extends Phaser.Scene {
     constructor() { super("IntroScene"); }
     create() {
@@ -194,105 +232,66 @@ class IntroScene extends Phaser.Scene {
         this.time.delayedCall(5000, () => {
              this.add.text(400, 500, "OH NO! I HAVE TO FIX THIS!", { fontSize: '24px', color: '#fff' }).setOrigin(0.5);
         });
-        this.time.delayedCall(7000, () => {
+        this.time.delayedCall(6000, () => {
             this.scene.start("LevelSneak");
         });
     }
 }
 
-// --- LEVEL 1: THE REAL HOME LAYOUT ---
+// --- LEVEL 1: SNEAK (Existing Home Logic) ---
 class LevelSneak extends Phaser.Scene {
     constructor() { super("LevelSneak"); }
     create() {
         if (this.cache.audio.exists('bgm')) { this.sound.play('bgm', { loop: true, volume: 0.5 }); }
-
-        // BACKGROUND: Home Map
-        // We stretch it slightly to fill 800x600 game window
         this.add.image(400, 300, 'home').setDisplaySize(800, 600);
-
-        this.add.text(400, 30, "SNEAK TO THE FRONT DOOR (Bottom Right)", { fontSize: '20px', color: '#fff', backgroundColor: '#000' }).setOrigin(0.5).setDepth(1000);
+        this.add.text(400, 30, "SNEAK TO FRONT DOOR (Bottom Right)", { fontSize: '20px', backgroundColor: '#000' }).setOrigin(0.5).setDepth(1000);
         
-        // --- WALLS (Invisible) ---
-        // These match the lines in your home.jpg floorplan
         this.walls = this.physics.add.staticGroup();
-        
-        // 1. Vertical Spine (Separating Left Rooms from Hallway)
-        this.walls.add(this.add.rectangle(420, 150, 10, 300)); // Top half (Bedroom wall)
-        this.walls.add(this.add.rectangle(420, 500, 10, 200)); // Bottom half (TV room wall)
-        
-        // 2. Horizontal Spine (Separating Top Rooms from Bottom Rooms)
-        this.walls.add(this.add.rectangle(200, 320, 400, 10)); // Left side (Bed/TV separator)
-        this.walls.add(this.add.rectangle(600, 320, 400, 10)); // Right side (Kitchen/Entrance separator)
-
-        // 3. Outer Borders
-        this.walls.add(this.add.rectangle(400, 5, 800, 10)); // Top
-        this.walls.add(this.add.rectangle(400, 595, 800, 10)); // Bottom
-        this.walls.add(this.add.rectangle(5, 300, 10, 600)); // Left
-        this.walls.add(this.add.rectangle(795, 300, 10, 600)); // Right
-
-        // Hide walls
+        this.walls.add(this.add.rectangle(420, 150, 10, 300));
+        this.walls.add(this.add.rectangle(420, 500, 10, 200));
+        this.walls.add(this.add.rectangle(200, 320, 400, 10));
+        this.walls.add(this.add.rectangle(600, 320, 400, 10));
+        this.walls.add(this.add.rectangle(400, 5, 800, 10));
+        this.walls.add(this.add.rectangle(400, 595, 800, 10));
+        this.walls.add(this.add.rectangle(5, 300, 10, 600));
+        this.walls.add(this.add.rectangle(795, 300, 10, 600));
         this.walls.children.iterate((child) => { child.setVisible(false); });
 
-        // --- PLAYER ---
-        // Start in Bedroom (Top Left)
         this.player = this.physics.add.sprite(150, 150, 'l1').setScale(0.5);
         this.player.body.setSize(30, 30).setOffset(25, 100);
         this.player.setCollideWorldBounds(true);
         this.physics.add.collider(this.player, this.walls);
 
-        // --- BABA (The Guard) ---
-        // Start in Kitchen (Top Right)
         this.baba = this.physics.add.sprite(650, 150, 'baba_idle').setScale(0.6).play('baba_walk');
         this.baba.body.setSize(40, 40).setOffset(20, 100);
 
-        // --- PATROL LOGIC (Visiting Rooms) ---
-        // Coordinates based on 800x600 home.jpg layout
-        this.patrolPoints = [
-            { x: 500, y: 300 }, // Hallway Top
-            { x: 500, y: 500 }, // Hallway Bottom
-            { x: 200, y: 500 }, // TV Room (Bottom Left)
-            { x: 500, y: 500 }, // Back to Hallway
-            { x: 700, y: 500 }, // Near Entrance (Scary!)
-            { x: 500, y: 300 }, // Hallway Top
-            { x: 650, y: 150 }  // Kitchen (Top Right)
-        ];
+        this.patrolPoints = [{ x: 500, y: 300 }, { x: 500, y: 500 }, { x: 200, y: 500 }, { x: 500, y: 500 }, { x: 700, y: 500 }, { x: 500, y: 300 }, { x: 650, y: 150 }];
         this.currentPoint = 0;
         this.moveBabaToNextPoint();
 
-        // --- WIN ZONE ---
-        // Double Doors at Bottom Right
-        this.exitZone = this.add.rectangle(750, 500, 60, 100, 0x00ff00, 0.0); // Invisible trigger
+        this.exitZone = this.add.rectangle(750, 500, 60, 100, 0x00ff00, 0.0);
         this.physics.add.existing(this.exitZone, true);
-
-        this.physics.add.overlap(this.player, this.exitZone, () => {
-            this.scene.start("LevelRun");
-        });
+        this.physics.add.overlap(this.player, this.exitZone, () => { this.scene.start("LevelRun"); });
 
         this.cursors = this.input.keyboard.createCursorKeys();
         addMobileControls(this);
     }
-
     moveBabaToNextPoint() {
         let p = this.patrolPoints[this.currentPoint];
-        this.physics.moveTo(this.baba, p.x, p.y, 120); // Speed
-
-        // Check distance to target
+        this.physics.moveTo(this.baba, p.x, p.y, 120);
         this.time.addEvent({
-            delay: 100,
-            loop: true,
+            delay: 100, loop: true,
             callback: () => {
                 if (this.baba && this.baba.body && Phaser.Math.Distance.Between(this.baba.x, this.baba.y, p.x, p.y) < 10) {
-                    this.baba.body.reset(p.x, p.y); // Stop
+                    this.baba.body.reset(p.x, p.y);
                     this.currentPoint++;
                     if (this.currentPoint >= this.patrolPoints.length) this.currentPoint = 0;
-                    // Wait 1.5 seconds in the room before moving
-                    this.time.delayedCall(1500, () => this.moveBabaToNextPoint()); 
-                    return false; // Stop checking
+                    this.time.delayedCall(1500, () => this.moveBabaToNextPoint());
+                    return false;
                 }
             }
         });
     }
-
     update() {
         this.player.setVelocity(0);
         let speed = 200;
@@ -303,121 +302,170 @@ class LevelSneak extends Phaser.Scene {
 
         if (left) { this.player.setVelocityX(-speed); this.player.flipX = true; this.player.anims.play('run', true); }
         else if (right) { this.player.setVelocityX(speed); this.player.flipX = false; this.player.anims.play('run', true); }
-        
         if (up) { this.player.setVelocityY(-speed); this.player.anims.play('run', true); }
         else if (down) { this.player.setVelocityY(speed); this.player.anims.play('run', true); }
-
         if (!left && !right && !up && !down) this.player.anims.stop();
 
         this.player.setDepth(this.player.y);
         this.baba.setDepth(this.baba.y);
 
-        // CAUGHT!
         if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), this.baba.getBounds())) {
             this.cameras.main.shake(200);
-            this.player.x = 150; this.player.y = 150; // Send back to Bedroom
+            this.player.x = 150; this.player.y = 150;
         }
     }
 }
 
+// --- LEVEL 2: THE RUN (Dino Style with Math Penalty) ---
 class LevelRun extends Phaser.Scene {
     constructor() { super("LevelRun"); }
     create() {
         this.bg = this.add.tileSprite(400, 300, 800, 600, 'city');
         this.player = this.physics.add.sprite(100, 450, 'l1').play('run').setScale(0.8);
+        this.player.setGravityY(800); // Gravity for jumping
+        this.player.setCollideWorldBounds(true);
+        
+        // Ground
+        this.ground = this.add.rectangle(400, 580, 800, 20, 0x000000, 0);
+        this.physics.add.existing(this.ground, true);
+        this.physics.add.collider(this.player, this.ground);
+
         this.obstacles = this.physics.add.group();
+        // Spawn Obstacles Loop (Dogs & Files)
         this.time.addEvent({ delay: 2000, callback: this.spawnObs, callbackScope: this, loop: true });
-        this.physics.add.overlap(this.player, this.obstacles, (p, o) => {
-            o.destroy();
-            this.cameras.main.shake(100);
-        });
+        
+        this.physics.add.overlap(this.player, this.obstacles, this.hitObstacle, null, this);
+
         this.timeLeft = 20; 
-        this.timerText = this.add.text(16, 16, 'Run: 20', { fontSize: '32px', color: '#fff' });
+        this.infoText = this.add.text(16, 50, 'Survive Boss Attack: 20s', { fontSize: '24px', color: '#fff' });
+        
         this.time.addEvent({ delay: 1000, callback: () => {
             this.timeLeft--;
-            this.timerText.setText('Run: ' + this.timeLeft);
-            if (this.timeLeft <= 0) this.scene.start("LevelPathao");
+            this.infoText.setText('Survive Boss Attack: ' + this.timeLeft);
+            if (this.timeLeft <= 0) {
+                alert("MOMO CALLING: 'Ekhono tmi phone deona! etokhone to maf chaoa uchit silo'");
+                this.scene.start("LevelCollect");
+            }
         }, loop: true });
+        
         addMobileControls(this);
+        this.cursors = this.input.keyboard.createCursorKeys();
     }
+
     update() {
         this.bg.tilePositionX += 5;
-        let jump = this.input.keyboard.createCursorKeys().space.isDown || (this.actionBtn && this.actionBtn.isDown);
-        if (jump && this.player.y > 400) {
-            this.player.y -= 150;
-            this.time.delayedCall(500, () => { this.player.y += 150; });
+        let jump = this.cursors.space.isDown || (this.actionBtn && this.actionBtn.isDown) || this.cursors.up.isDown;
+        if (jump && this.player.body.touching.down) {
+            this.player.setVelocityY(-500);
         }
     }
+
     spawnObs() {
-        let type = Phaser.Math.Between(0, 2);
-        let key = ['boss', 'dog_sleep', 'bus_side'][type];
-        let obs = this.obstacles.create(800, 450, key).setScale(0.7);
-        obs.setVelocityX(-400);
-        if (key === 'boss') {
-            let file = this.obstacles.create(obs.x, obs.y, 'files');
-            file.setVelocityX(-600);
+        let type = Phaser.Math.Between(0, 1);
+        let obs;
+        if (type === 0) {
+            // Dog (Ground)
+            obs = this.obstacles.create(800, 530, 'dog_bark').setScale(0.2); // Resized Small
+            obs.setVelocityX(-400);
+            obs.body.setAllowGravity(false);
+        } else {
+            // Boss Files (Air)
+            obs = this.obstacles.create(800, 450, 'files').setScale(0.3); // Resized Small
+            obs.setVelocityX(-500);
+            obs.body.setAllowGravity(false);
+        }
+    }
+
+    hitObstacle(player, obs) {
+        obs.destroy();
+        this.scene.pause(); // PAUSE GAME
+        
+        // Show Math Problem
+        let prob = mathProblems[Phaser.Math.Between(0, mathProblems.length - 1)];
+        let ans = prompt(`ENGINEERING PENALTY!\n${prob.q}\n\nOptions:\n0: ${prob.a[0]}\n1: ${prob.a[1]}\n2: ${prob.a[2]}\n\nEnter 0, 1, or 2:`);
+        
+        if (parseInt(ans) === prob.c) {
+            this.scene.resume();
+        } else {
+            alert("WRONG! 10 Seconds Lost from Global Timer!");
+            GLOBAL_TIMER -= 10;
+            this.scene.resume();
         }
     }
 }
 
-class LevelPathao extends Phaser.Scene {
-    constructor() { super("LevelPathao"); }
+// --- LEVEL 3: MAIN ROAD COLLECT ---
+class LevelCollect extends Phaser.Scene {
+    constructor() { super("LevelCollect"); }
     create() {
-        this.add.image(400, 300, 'city').setTint(0x555555);
-        this.add.text(400, 100, "LEVEL 3: NEGOTIATE RIDE", { fontSize: '28px', color: '#fff' }).setOrigin(0.5);
-        let rider = this.add.image(400, 300, 'pathao_single').setScale(1.5);
-        this.add.text(400, 450, "Enter Fare (120-150):", { fontSize: '24px', color: '#fff' }).setOrigin(0.5);
-        let input = document.createElement('input');
-        input.type = 'number';
-        input.style = "position:absolute; top: 500px; left: 50%; transform: translate(-50%); padding: 10px; font-size: 20px;";
-        document.body.appendChild(input);
-        let btn = document.createElement('button');
-        btn.innerText = "OFFER";
-        btn.style = "position:absolute; top: 550px; left: 50%; transform: translate(-50%); padding: 10px;";
-        document.body.appendChild(btn);
-        btn.onclick = () => {
-            let val = parseInt(input.value);
-            if (val < 120) {
-                alert("Rider: 'Dhur mama, eita kisu hoilo?'");
-            } else if (val > 150) {
-                rider.setTexture('pathao_mob');
-                alert("MOB ATTACK: 'Amare lon! Amare lon!'");
-                input.remove(); btn.remove();
-                this.time.delayedCall(2000, () => this.scene.start("LevelDrive"));
-            } else {
-                alert("Rider: 'Uthen mama.'");
-                input.remove(); btn.remove();
-                this.scene.start("LevelDrive");
-            }
-        };
+        this.bg = this.add.tileSprite(400, 300, 800, 600, 'city');
+        this.add.text(400, 100, "Collect 10 Flowers! Press 'V' or 'A'", { fontSize: '24px', backgroundColor: '#000' }).setOrigin(0.5);
+        
+        this.player = this.physics.add.sprite(100, 450, 'l1').play('run').setScale(0.8);
+        this.player.setGravityY(800);
+        this.ground = this.add.rectangle(400, 580, 800, 20, 0x000000, 0);
+        this.physics.add.existing(this.ground, true);
+        this.physics.add.collider(this.player, this.ground);
+
+        this.flowers = this.physics.add.group();
+        this.time.addEvent({ delay: 1500, callback: () => {
+            let f = this.flowers.create(800, 500, 'flower').setScale(0.2).setVelocityX(-200); // Resized
+            f.body.setAllowGravity(false);
+        }, loop: true });
+
+        this.score = 0;
+        this.scoreText = this.add.text(16, 50, 'Flowers: 0/10', { fontSize: '32px' });
+
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.vKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.V);
+        addMobileControls(this);
+    }
+
+    update() {
+        this.bg.tilePositionX += 5;
+        let interact = Phaser.Input.Keyboard.JustDown(this.vKey) || (this.actionBtn && this.actionBtn.isDown);
+        
+        if (interact) {
+            // Check overlaps manually for interaction
+            this.physics.overlap(this.player, this.flowers, (p, f) => {
+                f.destroy();
+                this.score++;
+                this.scoreText.setText('Flowers: ' + this.score + '/10');
+                if (this.score >= 10) {
+                    this.scene.start("LevelBus");
+                }
+            });
+        }
     }
 }
 
-class LevelDrive extends Phaser.Scene {
-    constructor() { super("LevelDrive"); }
+// --- LEVEL 4: THE BUS (Top Down) ---
+class LevelBus extends Phaser.Scene {
+    constructor() { super("LevelBus"); }
     create() {
         this.road = this.add.tileSprite(400, 300, 800, 600, 'road');
-        this.player = this.physics.add.sprite(400, 500, 'hunda_top').setScale(0.5);
+        this.player = this.physics.add.sprite(400, 500, 'bus_top').setScale(0.6); // Hero Bus
         this.cursors = this.input.keyboard.createCursorKeys();
+        
+        this.hits = 0;
+        
         this.traffic = this.physics.add.group();
         this.time.addEvent({ delay: 800, callback: () => {
             let x = Phaser.Math.Between(200, 600);
-            let bus = this.traffic.create(x, -100, 'bus_top').setScale(0.6).setVelocityY(400);
+            let t = this.traffic.create(x, -100, 'bus_top').setScale(0.6).setTint(0xff0000).setVelocityY(400); // Red enemy bus
         }, loop: true });
-        this.items = this.physics.add.group();
-        this.time.addEvent({ delay: 1500, callback: () => {
-            let x = Phaser.Math.Between(200, 600);
-            let type = Math.random() > 0.5 ? 'flower' : 'choco';
-            let item = this.items.create(x, -100, type).setVelocityY(200);
-        }, loop: true });
-        this.score = 0;
-        this.scoreText = this.add.text(16, 16, 'Love Items: 0', { fontSize: '24px', fill: '#000', backgroundColor: '#fff' });
-        this.physics.add.overlap(this.player, this.items, (p, i) => {
-            i.destroy();
-            this.score++;
-            this.scoreText.setText('Love Items: ' + this.score);
+
+        this.physics.add.overlap(this.player, this.traffic, (p, t) => {
+            t.destroy();
+            this.hits++;
+            this.cameras.main.shake(200);
+            if (this.hits >= 3) {
+                this.scene.start("LevelBlock");
+            }
         });
-        this.time.delayedCall(15000, () => this.scene.start("LevelUnlock"));
+        
+        // Pass if survive 15 seconds
+        this.time.delayedCall(15000, () => this.scene.start("LevelBlock"));
         addMobileControls(this);
     }
     update() {
@@ -429,33 +477,110 @@ class LevelDrive extends Phaser.Scene {
     }
 }
 
-class LevelUnlock extends Phaser.Scene {
-    constructor() { super("LevelUnlock"); }
+// --- LEVEL 5: THE BLOCK & BARGAIN ---
+class LevelBlock extends Phaser.Scene {
+    constructor() { super("LevelBlock"); }
     create() {
-        this.add.text(400, 200, "YOU ARE BLOCKED!", { fontSize: '40px', color: 'red' }).setOrigin(0.5);
-        this.add.text(400, 300, "Tap Keys to Unlock", { fontSize: '24px', color: '#fff' }).setOrigin(0.5);
-        let key = this.add.image(Phaser.Math.Between(100, 700), Phaser.Math.Between(100, 500), 'keys').setInteractive();
-        key.on('pointerdown', () => {
-            this.add.text(400, 400, "UNBLOCKED!", { fontSize: '30px', color: 'green' }).setOrigin(0.5);
-            this.time.delayedCall(1000, () => this.scene.start("LevelBoss"));
+        this.add.text(400, 200, "MOMO CALLED...", { fontSize: '40px', color: 'red' }).setOrigin(0.5);
+        this.add.text(400, 300, "\"No need to see me again. Good bye.\"", { fontSize: '30px' }).setOrigin(0.5);
+        this.add.text(400, 400, "YOU ARE BLOCKED.", { fontSize: '50px', color: 'red', fontStyle: 'bold' }).setOrigin(0.5);
+        
+        this.time.delayedCall(4000, () => {
+            this.scene.start("LevelBargain");
         });
-        this.time.addEvent({ delay: 500, callback: () => {
-            key.x = Phaser.Math.Between(100, 700);
-            key.y = Phaser.Math.Between(100, 500);
-        }, loop: true });
     }
 }
 
+class LevelBargain extends Phaser.Scene {
+    constructor() { super("LevelBargain"); }
+    create() {
+        this.add.image(400, 300, 'city').setTint(0x555555);
+        this.add.text(400, 100, "FIND A BIKE! NEGOTIATE!", { fontSize: '28px' }).setOrigin(0.5);
+        this.add.image(400, 300, 'pathao_single').setScale(1.5);
+        this.add.text(400, 450, "Enter Fare:", { fontSize: '24px' }).setOrigin(0.5);
+        
+        let input = document.createElement('input');
+        input.type = 'number';
+        input.style = "position:absolute; top: 500px; left: 50%; transform: translate(-50%); padding: 10px;";
+        document.body.appendChild(input);
+        
+        let btn = document.createElement('button');
+        btn.innerText = "OFFER";
+        btn.style = "position:absolute; top: 550px; left: 50%; transform: translate(-50%); padding: 10px;";
+        document.body.appendChild(btn);
+        
+        btn.onclick = () => {
+            let val = parseInt(input.value);
+            // Secret Range: 120-150
+            if (val >= 120 && val <= 150) {
+                alert("Rider: 'Uthen mama.'");
+                input.remove(); btn.remove();
+                this.scene.start("LevelBike");
+            } else {
+                alert("Rider: 'Dhur mama!' (Try 120-150)");
+            }
+        };
+    }
+}
+
+// --- LEVEL 6: THE BIKE RIDE ---
+class LevelBike extends Phaser.Scene {
+    constructor() { super("LevelBike"); }
+    create() {
+        this.road = this.add.tileSprite(400, 300, 800, 600, 'road');
+        this.player = this.physics.add.sprite(400, 500, 'hunda_top').setScale(0.5);
+        this.cursors = this.input.keyboard.createCursorKeys();
+        
+        this.traffic = this.physics.add.group();
+        this.time.addEvent({ delay: 800, callback: () => {
+            let x = Phaser.Math.Between(200, 600);
+            let bus = this.traffic.create(x, -100, 'bus_top').setScale(0.6).setVelocityY(400);
+        }, loop: true });
+        
+        this.add.text(10, 10, "Distance: 200m", { fontSize: '20px', backgroundColor: '#000' });
+        
+        this.time.delayedCall(10000, () => this.scene.start("LevelBoss")); // 10s drive
+        addMobileControls(this);
+    }
+    update() {
+        this.road.tilePositionY -= 15;
+        let left = this.cursors.left.isDown || (this.leftBtn && this.leftBtn.isDown);
+        let right = this.cursors.right.isDown || (this.rightBtn && this.rightBtn.isDown);
+        if (left) this.player.x -= 5;
+        if (right) this.player.x += 5;
+    }
+}
+
+// --- LEVEL 7: BOSS FIGHT ---
 class LevelBoss extends Phaser.Scene {
     constructor() { super("LevelBoss"); }
     create() {
         this.add.image(400, 300, 'city').setTint(0xff0000);
         this.boss = this.physics.add.sprite(400, 150, 'momo_angry').setScale(0.8);
         this.player = this.physics.add.sprite(400, 500, 'l1');
-        this.bossHP = 10;
-        this.hpText = this.add.text(16, 16, "Momo Anger: 100%", { fontSize: '32px', color: '#fff' });
+        
+        this.bossHP = 20;
+        this.playerHP = 3;
+        
+        this.hpText = this.add.text(16, 16, "Momo Anger: 20", { fontSize: '32px', color: '#fff' });
+        this.pText = this.add.text(600, 16, "Lian HP: 3", { fontSize: '32px', color: '#fff' });
+
         this.tweens.add({ targets: this.boss, x: 600, duration: 2000, yoyo: true, repeat: -1 });
         
+        // Boss Attacks (Lasers)
+        this.lasers = this.physics.add.group();
+        this.time.addEvent({ delay: 1000, callback: () => {
+            let l = this.lasers.create(this.boss.x, this.boss.y, 'fire').setVelocityY(300);
+        }, loop: true });
+
+        this.physics.add.overlap(this.player, this.lasers, (p, l) => {
+            l.destroy();
+            this.playerHP--;
+            this.pText.setText("Lian HP: " + this.playerHP);
+            this.cameras.main.shake(100);
+            if (this.playerHP <= 0) this.scene.restart(); // Retry Boss
+        });
+
         this.input.keyboard.on('keydown-SPACE', this.shootHeart, this);
         this.cursors = this.input.keyboard.createCursorKeys();
         addMobileControls(this);
@@ -473,15 +598,36 @@ class LevelBoss extends Phaser.Scene {
         this.physics.add.overlap(heart, this.boss, (h, b) => {
             h.destroy();
             this.bossHP--;
-            this.hpText.setText("Momo Anger: " + (this.bossHP * 10) + "%");
+            this.hpText.setText("Momo Anger: " + this.bossHP);
             if (this.bossHP <= 0) this.win();
         });
     }
     win() {
         this.physics.pause();
         this.boss.setTexture('momo_happy');
-        this.hpText.setText("SHE SAID YES!");
-        let winImg = this.add.image(400, 300, 'win').setScale(0.1);
-        this.tweens.add({ targets: winImg, scale: 1, duration: 1000, ease: 'Bounce' });
+        // Stop timer
+        GLOBAL_TIMER = 9999; 
+        
+        // THE PROPOSAL HTML OVERLAY
+        let div = document.createElement('div');
+        div.style = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; background:rgba(0,0,0,0.9); padding:20px; border:2px solid gold; color:white; font-family:monospace;";
+        div.innerHTML = `
+            <h1>Will you be my forever?</h1>
+            <button onclick="alert('SHE SAID YES! CONGRATS!'); location.reload()" style="font-size:20px; padding:10px; margin:10px; background:green; color:white;">YES</button>
+            <button onclick="alert('SHE SAID YES! CONGRATS!'); location.reload()" style="font-size:20px; padding:10px; margin:10px; background:green; color:white;">100%</button>
+            <button id="noBtn" style="font-size:20px; padding:10px; margin:10px; background:red; color:white; position:absolute;">I will think about it</button>
+        `;
+        document.body.appendChild(div);
+
+        // RUNAWAY BUTTON LOGIC
+        let noBtn = document.getElementById('noBtn');
+        noBtn.onmouseover = function() {
+            noBtn.style.left = Math.random() * 300 + 'px';
+            noBtn.style.top = Math.random() * 300 + 'px';
+        };
+        noBtn.ontouchstart = function() {
+            noBtn.style.left = Math.random() * 300 + 'px';
+            noBtn.style.top = Math.random() * 300 + 'px';
+        };
     }
 }
