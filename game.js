@@ -110,6 +110,7 @@ function startGame() {
 
 // --- CONTROLS HELPER (TRANSPARENT) ---
 function addMobileControls(scene) {
+    // Transparent Style
     const btnStyle = { 
         fontSize: '60px', 
         color: 'rgba(0, 255, 65, 0.3)', // 30% Opacity Green
@@ -136,6 +137,7 @@ function addMobileControls(scene) {
     scene.upBtn.isDown = false; scene.downBtn.isDown = false;
     scene.actionBtn.isDown = false;
 
+    // Touch Listeners
     scene.input.on('gameobjectdown', (pointer, obj) => {
         if (obj === scene.leftBtn) scene.leftBtn.isDown = true;
         if (obj === scene.rightBtn) scene.rightBtn.isDown = true;
@@ -258,22 +260,27 @@ class LevelSneak extends Phaser.Scene {
         this.add.image(400, 300, 'home').setDisplaySize(800, 600);
         this.add.text(400, 30, "SNEAK TO FRONT DOOR (Bottom Right)", { fontSize: '20px', backgroundColor: '#000' }).setOrigin(0.5).setDepth(1000);
         
+        // WALLS
         this.walls = this.physics.add.staticGroup();
         this.walls.add(this.add.rectangle(420, 150, 20, 300)); 
         this.walls.add(this.add.rectangle(420, 500, 20, 200)); 
         this.walls.add(this.add.rectangle(200, 320, 400, 20)); 
         this.walls.add(this.add.rectangle(600, 320, 400, 20)); 
+        // Borders
         this.walls.add(this.add.rectangle(400, 0, 800, 50)); 
         this.walls.add(this.add.rectangle(400, 600, 800, 50));
         this.walls.add(this.add.rectangle(0, 300, 50, 600));
         this.walls.add(this.add.rectangle(800, 300, 50, 600));
+        
         this.walls.children.iterate((child) => { child.setVisible(false); });
 
+        // Player
         this.player = this.physics.add.sprite(150, 150, 'l1').setScale(0.5);
         this.player.body.setSize(30, 30).setOffset(25, 100);
         this.player.setCollideWorldBounds(true);
         this.physics.add.collider(this.player, this.walls);
 
+        // Baba
         this.baba = this.physics.add.sprite(650, 150, 'baba_idle').setScale(0.6).play('baba_walk');
         this.baba.body.setSize(40, 40).setOffset(20, 100);
 
@@ -281,6 +288,7 @@ class LevelSneak extends Phaser.Scene {
         this.currentPoint = 0;
         this.moveBabaToNextPoint();
 
+        // Exit
         this.exitZone = this.add.rectangle(750, 500, 60, 100, 0x00ff00, 0.0);
         this.physics.add.existing(this.exitZone, true);
         this.physics.add.overlap(this.player, this.exitZone, () => { this.scene.start("LevelRun"); });
@@ -436,18 +444,20 @@ class LevelRun extends Phaser.Scene {
     }
 }
 
-// --- LEVEL 3: COLLECT (FIXED STUCK & INVISIBLE) ---
+// --- LEVEL 3: COLLECT (FIXED VISIBILITY & FALLING) ---
 class LevelCollect extends Phaser.Scene {
     constructor() { super("LevelCollect"); }
     create() {
         this.bg = this.add.tileSprite(400, 300, 800, 600, 'city');
         this.add.text(400, 100, "Collect 10 Flowers! Press 'V' or 'O'", { fontSize: '24px', backgroundColor: '#000' }).setOrigin(0.5);
         
-        // Player needs depth to show above background
+        // FIX: Depth set to 100 so he is visible
         this.player = this.physics.add.sprite(100, 450, 'l1').play('run').setScale(0.8).setDepth(100);
         this.player.setGravityY(800);
+        // FIX: CollideWorldBounds prevents falling out of screen
+        this.player.setCollideWorldBounds(true);
         
-        this.ground = this.add.rectangle(400, 580, 800, 20, 0x000000, 0);
+        this.ground = this.add.rectangle(400, 580, 800, 50, 0x000000, 0); // Thicker ground
         this.physics.add.existing(this.ground, true);
         this.physics.add.collider(this.player, this.ground);
         
