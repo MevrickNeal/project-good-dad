@@ -1,5 +1,5 @@
 // ==========================================
-// PART 1: THE PSYCHOPATH & PRINCESS QUIZ
+// PART 1: THE ORIGINAL PSYCHOPATH QUIZ
 // ==========================================
 const quizData = [
     { q: "You see a child trip. Do you laugh?", a: ["A. Yes, loudly", "B. Internal Chuckle", "C. No, I help them"] },
@@ -29,34 +29,24 @@ const quizData = [
     { q: "CALCULATING FINAL RESULT...", a: ["[ VIEW TRUTH ]"] }
 ];
 
+const iqQuestions = [
+    { q: "Momo is silent and staring at her phone. What is the most logical action?", a: ["Ask 'Are you mad?'", "Order her favorite food + Give space", "Tell her she's being dramatic"], c: 1 },
+    { q: "Identify the romantic pattern: ❤️, 🌹, 🍫, ❤️, 🌹, ...", a: ["🌹", "🍫", "❤️"], c: 1 }
+];
+
+const trapQuestions = [
+    { q: "Do I look fat in this dress?", a: ["No, you look perfect", "Maybe a little", "I like curves"], c: 0 },
+    { q: "Who is prettier, me or your ex?", a: ["You, obviously", "My ex was okay", "Different types"], c: 0 },
+    { q: "I said 'It's fine'. What does that mean?", a: ["It's fine", "It's NOT fine (PANIC)", "You are happy"], c: 1 }
+];
+
 let qIndex = 0;
 const ui = document.getElementById('quiz-ui');
 const qBox = document.getElementById('question-display');
 const oBox = document.getElementById('options-display');
 
-// MATH PENALTY DATA
-const mathProblems = [
-    { q: "Calculate Torque: Force=10N, Radius=2m", a: ["20 Nm", "5 Nm", "12 Nm"], c: 0 },
-    { q: "Derivative of x^2?", a: ["x", "2x", "x^3"], c: 1 },
-    { q: "Ohm's Law?", a: ["V=IR", "V=I/R", "V=R/I"], c: 0 },
-    { q: "Binary for 5?", a: ["100", "110", "101"], c: 2 },
-    { q: "Integral of 2x?", a: ["x^2", "2x^2", "x"], c: 0 }
-];
-
-// BOSS TRAP QUESTIONS
-const trapQuestions = [
-    { q: "Do I look fat in this dress?", a: ["No, you look perfect", "Maybe a little", "I like curves"], c: 0 },
-    { q: "Who is prettier, me or your ex?", a: ["You, obviously", "My ex was okay", "Different types"], c: 0 },
-    { q: "I said 'It's fine'. What does that mean?", a: ["It's fine", "It's NOT fine (PANIC)", "You are happy"], c: 1 },
-    { q: "Do you remember our first date?", a: ["Of course!", "Uhhh...", "Last week?"], c: 0 },
-    { q: "If I was a worm, would you love me?", a: ["Yes, worm wifey", "No, that's gross", "Idk"], c: 0 }
-];
-
 function loadQuestion() {
-    if (qIndex >= quizData.length) {
-        endQuiz();
-        return;
-    }
+    if (qIndex >= quizData.length) { endQuiz(); return; }
     let data = quizData[qIndex];
     qBox.innerText = data.q;
     oBox.innerHTML = "";
@@ -69,592 +59,299 @@ function loadQuestion() {
 }
 
 function endQuiz() {
-    qBox.innerText = "CALCULATING PATERNAL INSTINCTS...";
-    oBox.innerHTML = "";
+    qBox.innerHTML = "RESULT: <br><span style='font-size:30px;'>YOU ARE A GOOD DAD.</span>";
     setTimeout(() => {
-        qBox.innerHTML = "RESULT: <br><span style='font-size:30px; color:white; text-shadow:0 0 10px white;'>YOU ARE A GOOD DAD.</span>";
-        setTimeout(() => {
-            document.body.classList.add('glitch');
-            setTimeout(() => {
-                document.body.classList.remove('glitch');
-                ui.style.display = 'none';
-                document.getElementById('game-wrapper').style.display = 'block';
-                startGame();
-            }, 1500);
-        }, 3000);
-    }, 2000);
+        ui.style.display = 'none';
+        document.getElementById('game-wrapper').style.display = 'block';
+        startGame();
+    }, 3000);
 }
 
 loadQuestion();
 
+// Universal Skip Stage: Press '5'
 document.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'o') {
-        const ui = document.getElementById('quiz-ui');
+    if (e.key === '5') {
         if (ui.style.display !== 'none') {
             ui.style.display = 'none';
             document.getElementById('game-wrapper').style.display = 'block';
             startGame();
+        } else if (window.gameInstance) {
+            let scenes = ['LevelSneak', 'LevelRun', 'LevelChase', 'LevelBus', 'LevelIQ', 'LevelBargain', 'LevelBike', 'LevelBoss'];
+            let current = window.gameInstance.scene.getScenes(true).find(s => s.scene.key !== 'UIScene');
+            if (current) {
+                let nextIdx = scenes.indexOf(current.scene.key) + 1;
+                if (nextIdx < scenes.length) current.scene.start(scenes[nextIdx]);
+            }
         }
     }
 });
 
 // ==========================================
-// PART 2: PHASER GAME ENGINE
+// PART 2: PHASER GAME ENGINE (3 MIN TOTAL)
 // ==========================================
-
-var GLOBAL_TIMER = 300; 
+var GLOBAL_TIMER = 180; // 3 Minutes
+var BIKE_LIVES = 3;
 
 function startGame() {
     const config = {
         type: Phaser.AUTO,
-        width: 800,
-        height: 600,
+        width: 800, height: 600,
         parent: 'game-wrapper',
         physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
-        scene: [BootScene, UIScene, IntroScene, LevelSneak, LevelRun, LevelCollect, LevelBus, LevelBlock, LevelBargain, LevelBike, LevelBoss]
+        scene: [BootScene, UIScene, LevelSneak, LevelRun, LevelChase, LevelBus, LevelIQ, LevelBargain, LevelBike, LevelBoss]
     };
-    new Phaser.Game(config);
-}
-
-function addMobileControls(scene, actionText = 'O') {
-    const btnStyle = { fontSize: '60px', color: 'rgba(0, 255, 65, 0.3)', fontStyle: 'bold' };
-    const actionStyle = { fontSize: '60px', color: 'rgba(255, 0, 0, 0.3)', fontStyle: 'bold' };
-    const hitArea = new Phaser.Geom.Rectangle(-20, -20, 100, 100);
-
-    scene.leftBtn = scene.add.text(50, 500, '<', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
-    scene.rightBtn = scene.add.text(200, 500, '>', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
-    scene.upBtn = scene.add.text(125, 420, '^', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
-    scene.downBtn = scene.add.text(125, 500, 'v', btnStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
-    
-    // Action Button
-    scene.actionBtn = scene.add.text(650, 480, actionText, actionStyle).setScrollFactor(0).setInteractive(hitArea, Phaser.Geom.Rectangle.Contains).setDepth(9999);
-
-    scene.leftBtn.isDown = false; scene.rightBtn.isDown = false;
-    scene.upBtn.isDown = false; scene.downBtn.isDown = false;
-    scene.actionBtn.isDown = false;
-
-    scene.input.on('gameobjectdown', (pointer, obj) => {
-        if (obj === scene.leftBtn) scene.leftBtn.isDown = true;
-        if (obj === scene.rightBtn) scene.rightBtn.isDown = true;
-        if (obj === scene.upBtn) scene.upBtn.isDown = true;
-        if (obj === scene.downBtn) scene.downBtn.isDown = true;
-        if (obj === scene.actionBtn) scene.actionBtn.isDown = true;
-    });
-
-    scene.input.on('gameobjectup', (pointer, obj) => {
-        if (obj === scene.leftBtn) scene.leftBtn.isDown = false;
-        if (obj === scene.rightBtn) scene.rightBtn.isDown = false;
-        if (obj === scene.upBtn) scene.upBtn.isDown = false;
-        if (obj === scene.downBtn) scene.downBtn.isDown = false;
-        if (obj === scene.actionBtn) scene.actionBtn.isDown = false;
-    });
+    window.gameInstance = new Phaser.Game(config);
 }
 
 class BootScene extends Phaser.Scene {
     constructor() { super("Boot"); }
     preload() {
         this.load.path = 'assets/sprites/';
-        this.load.audio('bgm', 'bgm.mp3');
         this.load.image('home', 'home.jpg'); 
-        this.load.image('city', 'evening city.png'); 
+        this.load.image('city', 'evening city.png');
         this.load.image('road', 'vangarasta.png');
-        this.load.image('hunda_top', 'top_bike.png');
-        this.load.image('hunda_side', 'hunda.png');
         this.load.image('boss', 'boss-office.png');
         this.load.image('baba_idle', 'baba.png');
-        this.load.image('baba_w1', 'walkbaba.png');
-        this.load.image('baba_w2', 'walkbaba1.png');
-        this.load.image('baba_w3', 'walkbaba2.png');
-        this.load.image('pathao_single', 'bikeride.png');
-        this.load.image('pathao_mob', 'grabarm.png');
-        this.load.image('dog_sleep', 'kuttasleep.jpg');
-        this.load.image('dog_bark', 'kuttavau.png');
-        this.load.image('bus_side', 'poristhanside.png');
-        this.load.image('bus_top', 'bus-topdown.png');
         this.load.image('momo_angry', 'momo-boss.png');
         this.load.image('momo_happy', 'momo-happy.png');
-        this.load.image('files', 'files.png'); 
-        this.load.image('fire', 'golla.png'); // Used for fire
-        this.load.image('golla', 'golla.png'); // Used for fireball
-        this.load.image('heart', 'heart.png');
-        this.load.image('choco', 'choco.png');
         this.load.image('flower', 'flower.png');
-        this.load.image('keys', 'keys.png');
+        this.load.image('heart', 'heart.png');
+        this.load.image('golla', 'golla.png');
+        this.load.image('files', 'files.png');
+        this.load.image('bus_side', 'poristhanside.png');
+        this.load.image('bus_top', 'bus-topdown.png');
+        this.load.image('hunda_top', 'top_bike.png');
         this.load.image('win', 'win.png');
-        
         for(let i=1; i<=10; i++) this.load.image(`l${i}`, `l${i}.png`);
-        this.load.image('jump_pose', 'l9.png'); 
     }
-    create() {
-        this.anims.create({
-            key: 'run',
-            frames: [
-                { key: 'l1' }, { key: 'l2' }, { key: 'l3' }, { key: 'l4' }, { key: 'l5' },
-                { key: 'l6' }, { key: 'l7' }, { key: 'l8' }, { key: 'l9' }, { key: 'l10' }
-            ],
-            frameRate: 15, repeat: -1
-        });
-        this.anims.create({
-            key: 'baba_walk',
-            frames: [ { key: 'baba_w1' }, { key: 'baba_w2' }, { key: 'baba_w3' } ],
-            frameRate: 6, repeat: -1
-        });
-        this.scene.launch("UIScene");
-        this.scene.start("IntroScene");
+    create() { 
+        this.anims.create({ key: 'run', frames: Array.from({length: 8}, (_, i) => ({ key: `l${i+1}` })), frameRate: 12, repeat: -1 });
+        this.scene.launch("UIScene"); 
+        this.scene.start("LevelSneak"); 
     }
 }
 
 class UIScene extends Phaser.Scene {
     constructor() { super("UIScene"); }
     create() {
-        this.timerText = this.add.text(600, 10, 'TIME: 5:00', { fontSize: '32px', color: '#fff', fontStyle: 'bold', backgroundColor: '#000' }).setScrollFactor(0).setDepth(9999);
+        this.timerText = this.add.text(20, 20, 'TIME: 3:00', { fontSize: '32px', color: '#ff0000', backgroundColor: '#000' }).setScrollFactor(0).setDepth(10000);
         this.time.addEvent({
-            delay: 1000,
-            loop: true,
+            delay: 1000, loop: true,
             callback: () => {
                 GLOBAL_TIMER--;
-                let min = Math.floor(GLOBAL_TIMER / 60);
-                let sec = GLOBAL_TIMER % 60;
-                this.timerText.setText(`TIME: ${min}:${sec < 10 ? '0'+sec : sec}`);
-                if (GLOBAL_TIMER <= 0) {
-                    alert("TIME UP! SHE LEFT!");
-                    location.reload();
-                }
+                let m = Math.floor(GLOBAL_TIMER/60);
+                let s = GLOBAL_TIMER%60;
+                this.timerText.setText(`TIME: ${m}:${s<10?'0'+s:s}`);
+                if (GLOBAL_TIMER <= 0) location.reload();
             }
         });
     }
 }
 
-class IntroScene extends Phaser.Scene {
-    constructor() { super("IntroScene"); }
-    create() {
-        this.cameras.main.setBackgroundColor('#000000');
-        this.add.text(400, 200, "3:00 AM...", { fontSize: '40px', color: '#fff' }).setOrigin(0.5);
-        this.time.delayedCall(1500, () => {
-             this.add.text(400, 300, "1 NEW MESSAGE FROM MOMO", { fontSize: '24px', color: '#00ff00', backgroundColor: '#000' }).setOrigin(0.5);
-        });
-        this.time.delayedCall(3000, () => {
-            this.add.text(400, 400, "\"I HATE YOU. DO NOT CALL ME.\"", { fontSize: '32px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
-        });
-        this.time.delayedCall(5000, () => {
-             this.add.text(400, 500, "OH NO! I HAVE TO FIX THIS!", { fontSize: '24px', color: '#fff' }).setOrigin(0.5);
-        });
-        this.time.delayedCall(6000, () => {
-            this.scene.start("LevelSneak");
-        });
-    }
-}
-
+// --- LEVEL 1: SNEAK (FIXED SCALE) ---
 class LevelSneak extends Phaser.Scene {
     constructor() { super("LevelSneak"); }
     create() {
-        if (this.cache.audio.exists('bgm')) { this.sound.play('bgm', { loop: true, volume: 0.5 }); }
         this.add.image(400, 300, 'home').setDisplaySize(800, 600);
-        this.add.text(400, 30, "SNEAK TO FRONT DOOR (Bottom Right)", { fontSize: '20px', backgroundColor: '#000' }).setOrigin(0.5).setDepth(1000);
-        
-        this.walls = this.physics.add.staticGroup();
-        this.walls.add(this.add.rectangle(420, 150, 20, 300)); 
-        this.walls.add(this.add.rectangle(420, 500, 20, 200)); 
-        this.walls.add(this.add.rectangle(200, 320, 400, 20)); 
-        this.walls.add(this.add.rectangle(600, 320, 400, 20)); 
-        this.walls.add(this.add.rectangle(400, 0, 800, 50)); 
-        this.walls.add(this.add.rectangle(400, 600, 800, 50));
-        this.walls.add(this.add.rectangle(0, 300, 50, 600));
-        this.walls.add(this.add.rectangle(800, 300, 50, 600));
-        this.walls.children.iterate((child) => { child.setVisible(false); });
-
-        this.player = this.physics.add.sprite(150, 150, 'l1').setScale(0.5);
-        this.player.body.setSize(30, 30).setOffset(25, 100);
-        this.player.setCollideWorldBounds(true);
-        this.physics.add.collider(this.player, this.walls);
-
-        this.baba = this.physics.add.sprite(650, 150, 'baba_idle').setScale(0.6).play('baba_walk');
-        this.baba.body.setSize(40, 40).setOffset(20, 100);
-
-        this.patrolPoints = [{ x: 500, y: 300 }, { x: 500, y: 500 }, { x: 200, y: 500 }, { x: 500, y: 500 }, { x: 700, y: 500 }, { x: 500, y: 300 }, { x: 650, y: 150 }];
-        this.currentPoint = 0;
-        this.moveBabaToNextPoint();
-
-        this.exitZone = this.add.rectangle(750, 500, 60, 100, 0x00ff00, 0.0);
-        this.physics.add.existing(this.exitZone, true);
-        this.physics.add.overlap(this.player, this.exitZone, () => { this.scene.start("LevelRun"); });
-
+        this.player = this.physics.add.sprite(150, 150, 'l1').setScale(0.25);
+        this.baba = this.physics.add.sprite(600, 400, 'baba_idle').setScale(0.35);
         this.cursors = this.input.keyboard.createCursorKeys();
-        addMobileControls(this);
-    }
-    moveBabaToNextPoint() {
-        let p = this.patrolPoints[this.currentPoint];
-        this.physics.moveTo(this.baba, p.x, p.y, 120);
-        this.time.addEvent({
-            delay: 100, loop: true,
-            callback: () => {
-                if (this.baba && this.baba.body && Phaser.Math.Distance.Between(this.baba.x, this.baba.y, p.x, p.y) < 10) {
-                    this.baba.body.reset(p.x, p.y);
-                    this.currentPoint++;
-                    if (this.currentPoint >= this.patrolPoints.length) this.currentPoint = 0;
-                    this.time.delayedCall(1500, () => this.moveBabaToNextPoint());
-                    return false;
-                }
-            }
-        });
+        this.tweens.add({ targets: this.baba, x: 300, duration: 3000, yoyo: true, repeat: -1 });
     }
     update() {
-        this.player.setVelocity(0); 
-        let speed = 200;
-        let left = this.cursors.left.isDown || (this.leftBtn && this.leftBtn.isDown);
-        let right = this.cursors.right.isDown || (this.rightBtn && this.rightBtn.isDown);
-        let up = this.cursors.up.isDown || (this.upBtn && this.upBtn.isDown);
-        let down = this.cursors.down.isDown || (this.downBtn && this.downBtn.isDown);
-
-        if (left) { this.player.setVelocityX(-speed); this.player.flipX = true; this.player.anims.play('run', true); }
-        else if (right) { this.player.setVelocityX(speed); this.player.flipX = false; this.player.anims.play('run', true); }
-        if (up) { this.player.setVelocityY(-speed); this.player.anims.play('run', true); }
-        else if (down) { this.player.setVelocityY(speed); this.player.anims.play('run', true); }
-        if (!left && !right && !up && !down) this.player.anims.stop();
-
-        this.player.setDepth(this.player.y);
-        this.baba.setDepth(this.baba.y);
-
-        if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), this.baba.getBounds())) {
-            this.cameras.main.shake(200);
-            this.player.x = 150; this.player.y = 150;
-        }
+        this.player.setVelocity(0);
+        if (this.cursors.left.isDown) this.player.setVelocityX(-160);
+        else if (this.cursors.right.isDown) this.player.setVelocityX(160);
+        if (this.cursors.up.isDown) this.player.setVelocityY(-160);
+        else if (this.cursors.down.isDown) this.player.setVelocityY(160);
+        if (this.player.x > 750) this.scene.start("LevelRun");
+        if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), this.baba.getBounds())) this.player.setPosition(150, 150);
     }
 }
 
+// --- LEVEL 2: OFFICE BOSS (MIRRORED FACING PLAYER) ---
 class LevelRun extends Phaser.Scene {
     constructor() { super("LevelRun"); }
     create() {
-        this.bg = this.add.tileSprite(400, 300, 800, 600, 'city');
-        this.boss = this.add.image(750, 400, 'boss').setScale(0.8).setScrollFactor(0).setDepth(50);
-        this.player = this.physics.add.sprite(100, 450, 'l1').setScale(0.8).setDepth(100);
-        this.player.setGravityY(1200); 
-        this.player.setCollideWorldBounds(true);
-        this.ground = this.add.rectangle(400, 580, 800, 20, 0x000000, 0);
+        this.add.image(400, 300, 'city');
+        this.player = this.physics.add.sprite(100, 500, 'l1').setScale(0.6).setGravityY(1000);
+        this.boss = this.add.image(700, 500, 'boss').setScale(0.6).setFlipX(true);
+        this.ground = this.add.rectangle(400, 580, 800, 20, 0x000, 0);
         this.physics.add.existing(this.ground, true);
         this.physics.add.collider(this.player, this.ground);
         this.obstacles = this.physics.add.group();
-        this.time.addEvent({ delay: 2000, callback: this.spawnObs, callbackScope: this, loop: true });
-        this.physics.add.overlap(this.player, this.obstacles, this.hitObstacle, null, this);
-        this.timeLeft = 20; 
-        this.infoText = this.add.text(16, 50, 'Survive Boss: 20s', { fontSize: '24px', color: '#fff' });
-        this.time.addEvent({ delay: 1000, callback: () => {
-            this.timeLeft--;
-            this.infoText.setText('Survive Boss: ' + this.timeLeft);
-            if (this.timeLeft <= 0) {
-                alert("MOMO CALLING: 'Ekhono tmi phone deona! etokhone to maf chaoa uchit silo'");
-                this.scene.start("LevelCollect");
-            }
-        }, loop: true });
-        addMobileControls(this);
-        this.cursors = this.input.keyboard.createCursorKeys();
-        this.isSlowed = false;
+        this.time.addEvent({ delay: 1800, loop: true, callback: () => {
+            let p = this.obstacles.create(700, 480, 'files').setScale(0.3).setVelocityX(-450);
+            p.body.setAllowGravity(false);
+        }});
+        this.physics.add.overlap(this.player, this.obstacles, () => { this.cameras.main.shake(100); this.player.setPosition(100, 450); });
+        this.time.delayedCall(15000, () => this.scene.start("LevelChase"));
     }
-    update() {
-        this.bg.tilePositionX += 5; 
-        let jump = this.cursors.up.isDown || (this.upBtn && this.upBtn.isDown) || this.cursors.space.isDown;
-        let duck = this.cursors.down.isDown || (this.downBtn && this.downBtn.isDown);
-        if (this.player.body.touching.down) {
-            if (jump) { this.player.setVelocityY(-700); this.player.setTexture('jump_pose'); } 
-            else if (duck) { this.player.body.setSize(50, 70).setOffset(10, 50); this.player.anims.play('run', true); this.player.setTint(0x888888); } 
-            else { this.player.body.setSize(50, 140).setOffset(10, 10); this.player.clearTint(); if (!this.isSlowed) this.player.anims.play('run', true); }
-        } else { this.player.setTexture('jump_pose'); }
-    }
-    spawnObs() {
-        let type = Phaser.Math.Between(0, 2);
-        let obs;
-        if (type === 0) {
-            obs = this.obstacles.create(800, 540, 'dog_sleep').setScale(0.15); obs.setVelocityX(-400); obs.body.setAllowGravity(false); obs.type = "dog";
-        } else {
-            obs = this.obstacles.create(700, 400, 'files').setScale(0.2); obs.setVelocityX(-500); obs.body.setAllowGravity(false); obs.type = "file";
-        }
-    }
-    hitObstacle(player, obs) {
-        if (obs.type === "dog") {
-            obs.setTexture('dog_bark'); this.isSlowed = true; player.setTint(0xff0000); this.cameras.main.shake(100);
-            this.time.delayedCall(1000, () => { this.isSlowed = false; player.clearTint(); }); obs.destroy();
-        } else {
-            obs.destroy(); this.scene.pause(); 
-            let prob = mathProblems[Phaser.Math.Between(0, mathProblems.length - 1)];
-            let ans = prompt(`ENGINEERING PENALTY!\n${prob.q}\n\nOptions:\n0: ${prob.a[0]}\n1: ${prob.a[1]}\n2: ${prob.a[2]}\n\nEnter 0, 1, or 2:`);
-            if (parseInt(ans) === prob.c) { this.scene.resume(); } else { alert("WRONG! 10 Seconds Lost!"); GLOBAL_TIMER -= 10; this.scene.resume(); }
-        }
-    }
+    update() { if (this.input.keyboard.createCursorKeys().up.isDown && this.player.body.touching.down) this.player.setVelocityY(-550); }
 }
 
-class LevelCollect extends Phaser.Scene {
-    constructor() { super("LevelCollect"); }
+// --- LEVEL 3: BUS CHASE (FREE UP/DOWN) ---
+class LevelChase extends Phaser.Scene {
+    constructor() { super("LevelChase"); }
     create() {
-        this.bg = this.add.tileSprite(400, 300, 800, 600, 'city');
-        this.add.text(400, 100, "Collect 10 Flowers! Press 'V' or 'O'", { fontSize: '24px', backgroundColor: '#000' }).setOrigin(0.5);
-        
-        // FREE MOVEMENT SETUP (No Gravity)
-        this.player = this.physics.add.sprite(100, 450, 'l1').play('run').setScale(0.8).setDepth(100);
-        this.player.setCollideWorldBounds(true);
-        
+        this.add.image(400, 300, 'city');
+        this.player = this.physics.add.sprite(100, 300, 'l1').setScale(0.6);
+        this.bus = this.physics.add.sprite(600, 300, 'bus_side').setScale(0.8).setVelocityX(45);
         this.flowers = this.physics.add.group();
-        this.time.addEvent({ delay: 1500, callback: () => {
-            let yPos = Phaser.Math.Between(300, 550);
-            let f = this.flowers.create(800, yPos, 'flower').setScale(0.15).setVelocityX(-200);
-            f.body.setAllowGravity(false);
-        }, loop: true });
-        
         this.score = 0;
-        this.scoreText = this.add.text(16, 50, 'Flowers: 0/10', { fontSize: '32px' });
-        this.cursors = this.input.keyboard.createCursorKeys();
-        this.vKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.V);
-        addMobileControls(this);
-
-        this.physics.add.overlap(this.player, this.flowers, (p, f) => {
-            let isAction = this.vKey.isDown || (this.actionBtn && this.actionBtn.isDown);
-            if (isAction) {
-                f.destroy();
-                this.score++;
-                this.scoreText.setText('Flowers: ' + this.score + '/10');
-                if (this.score >= 10) {
-                    this.bus = this.physics.add.sprite(700, 400, 'bus_side').setScale(0.5).setImmovable(true);
-                    this.bus.setDepth(90);
-                    this.add.text(600, 300, "WALK TO BUS ->", { fontSize: '24px', backgroundColor: 'blue' });
-                    this.physics.add.overlap(this.player, this.bus, () => {
-                        this.scene.start("LevelBus");
-                    });
-                }
-            }
-        });
+        this.time.addEvent({ delay: 1000, loop: true, callback: () => {
+            this.flowers.create(800, Phaser.Math.Between(100, 550), 'flower').setScale(0.15).setVelocityX(-200).body.setAllowGravity(false);
+        }});
+        this.physics.add.overlap(this.player, this.flowers, (p, f) => { f.destroy(); this.score++; });
+        this.physics.add.overlap(this.player, this.bus, () => { if(this.score >= 10) this.scene.start("LevelBus"); });
     }
     update() {
-        this.bg.tilePositionX += 5;
+        let c = this.input.keyboard.createCursorKeys();
         this.player.setVelocity(0);
-        let speed = 250;
-        let left = this.cursors.left.isDown || (this.leftBtn && this.leftBtn.isDown);
-        let right = this.cursors.right.isDown || (this.rightBtn && this.rightBtn.isDown);
-        let up = this.cursors.up.isDown || (this.upBtn && this.upBtn.isDown);
-        let down = this.cursors.down.isDown || (this.downBtn && this.downBtn.isDown);
-
-        if (left) this.player.setVelocityX(-speed);
-        if (right) this.player.setVelocityX(speed);
-        if (up) this.player.setVelocityY(-speed);
-        if (down) this.player.setVelocityY(speed);
+        if (c.up.isDown) this.player.setVelocityY(-250); if (c.down.isDown) this.player.setVelocityY(250);
+        if (c.right.isDown) this.player.setVelocityX(100); if (c.left.isDown) this.player.setVelocityX(-150);
     }
 }
 
+// --- LEVEL 4: BUS SURVIVAL (500m LIMIT) ---
 class LevelBus extends Phaser.Scene {
     constructor() { super("LevelBus"); }
     create() {
-        this.road = this.add.tileSprite(400, 300, 800, 600, 'road');
+        this.add.tileSprite(400, 300, 800, 600, 'road');
         this.player = this.physics.add.sprite(400, 500, 'bus_top').setScale(0.6);
-        this.player.body.setSize(60, 150);
-        this.cursors = this.input.keyboard.createCursorKeys();
-        this.hits = 0;
+        this.dist = 0;
         this.traffic = this.physics.add.group();
-        this.time.addEvent({ delay: 1000, callback: () => {
-            let x = Phaser.Math.Between(200, 600);
-            let t = this.traffic.create(x, -100, 'bus_top').setScale(0.6).setTint(0xff0000).setVelocityY(400);
-            t.body.setSize(60, 150);
-        }, loop: true });
-        
-        this.physics.add.overlap(this.player, this.traffic, (p, t) => {
-            if(t.active) { 
-                t.destroy();
-                this.hits++;
-                this.cameras.main.shake(200);
-                if (this.hits >= 3) this.scene.start("LevelBlock");
-            }
+        this.time.addEvent({ delay: 900, loop: true, callback: () => {
+            this.traffic.create(Phaser.Math.Between(200, 600), -100, 'bus_top').setScale(0.6).setTint(0xff0000).setVelocityY(400);
+        }});
+        this.physics.add.overlap(this.player, this.traffic, () => {
+            alert("MOMO: 'Ki koro tmi? Ekhon o asho nai? BLOCK KORE DILAM!'"); // Scolding fixed
+            this.scene.start("LevelIQ");
         });
-        this.time.delayedCall(15000, () => this.scene.start("LevelBlock"));
-        addMobileControls(this);
     }
     update() {
-        this.road.tilePositionY -= 10;
-        let left = this.cursors.left.isDown || (this.leftBtn && this.leftBtn.isDown);
-        let right = this.cursors.right.isDown || (this.rightBtn && this.rightBtn.isDown);
-        if (left) this.player.x -= 5;
-        if (right) this.player.x += 5;
+        this.dist += 1;
+        let c = this.input.keyboard.createCursorKeys();
+        if (c.left.isDown) this.player.x -= 5; if (c.right.isDown) this.player.x += 5;
+        if (this.dist >= 500) this.scene.start("LevelIQ");
     }
 }
 
-class LevelBlock extends Phaser.Scene {
-    constructor() { super("LevelBlock"); }
+// --- LEVEL: EMOTIONAL IQ ---
+class LevelIQ extends Phaser.Scene {
+    constructor() { super("LevelIQ"); }
     create() {
-        this.add.text(400, 200, "MOMO CALLED...", { fontSize: '40px', color: 'red' }).setOrigin(0.5);
-        this.add.text(400, 300, "\"No need to see me again. Good bye.\"", { fontSize: '30px' }).setOrigin(0.5);
-        this.add.text(400, 400, "YOU ARE BLOCKED.", { fontSize: '50px', color: 'red', fontStyle: 'bold' }).setOrigin(0.5);
-        this.time.delayedCall(4000, () => { this.scene.start("LevelBargain"); });
+        this.add.text(400, 100, "HIGH IQ EMOTIONAL TEST", { fontSize: '32px' }).setOrigin(0.5);
+        let q = iqQuestions[Phaser.Math.Between(0, 1)];
+        this.add.text(400, 200, q.q, { fontSize: '20px', align: 'center', wordWrap: { width: 600 } }).setOrigin(0.5);
+        q.a.forEach((ans, i) => {
+            let btn = this.add.text(400, 350 + (i * 60), ans, { backgroundColor: '#333', padding: 15 }).setOrigin(0.5).setInteractive();
+            btn.on('pointerdown', () => { 
+                if(i === q.c) { alert("CORRECT! Proceeding to bargain..."); this.scene.start("LevelBargain"); }
+                else alert("MOMO: 'Tmi amake ekhono bujho nai!'"); 
+            });
+        });
     }
 }
 
+// --- LEVEL: BARGAIN (165TK MARGIN) ---
 class LevelBargain extends Phaser.Scene {
     constructor() { super("LevelBargain"); }
     create() {
-        this.add.image(400, 300, 'city').setTint(0x555555);
-        this.add.text(400, 100, "FIND A BIKE! NEGOTIATE!", { fontSize: '28px' }).setOrigin(0.5);
-        this.add.image(400, 300, 'pathao_single').setScale(1.5);
-        this.add.text(400, 450, "Enter Fare:", { fontSize: '24px' }).setOrigin(0.5);
+        const MARGIN = 165;
+        let riderPrice = 250;
+        this.add.text(400, 100, "BARGAIN WITH RIDER", { fontSize: '28px' }).setOrigin(0.5);
+        let riderUI = this.add.text(400, 200, "Rider: '250tk lagbe mama.'", { color: '#ffff00', fontSize: '20px' }).setOrigin(0.5);
+        
         let input = document.createElement('input');
-        input.type = 'number';
-        input.style = "position:absolute; top: 500px; left: 50%; transform: translate(-50%); padding: 10px;";
+        input.type = 'number'; input.placeholder = "Offer amount";
+        input.style = "position:absolute; top: 300px; left: 50%; transform: translate(-50%); padding: 10px; z-index: 100;";
         document.body.appendChild(input);
+
         let btn = document.createElement('button');
         btn.innerText = "OFFER";
-        btn.style = "position:absolute; top: 550px; left: 50%; transform: translate(-50%); padding: 10px;";
+        btn.style = "position:absolute; top: 360px; left: 50%; transform: translate(-50%); padding: 10px; z-index: 100;";
         document.body.appendChild(btn);
+
         btn.onclick = () => {
-            let val = parseInt(input.value);
-            if (val >= 120 && val <= 150) {
-                alert("Rider: 'Uthen mama.'");
+            let userOffer = parseInt(input.value);
+            if (userOffer < 130) { riderUI.setText("Rider: (Suspicious silence...) 'Eto kom e hobe na.'"); return; }
+            riderPrice -= Math.floor(Math.random() * 25) + 5;
+            if (userOffer >= riderPrice) {
                 input.remove(); btn.remove();
+                if (userOffer > MARGIN) { alert(`Overpaid ${userOffer}tk! -10s Penalty.`); GLOBAL_TIMER -= 10; }
+                else { alert(`Good deal! Agreed at ${userOffer}tk! +10s Reward!`); GLOBAL_TIMER += 10; }
                 this.scene.start("LevelBike");
-            } else {
-                alert("Rider: 'Dhur mama!' (Try 120-150)");
-            }
+            } else { riderUI.setText(`Rider: 'Na mama, ${riderPrice}tk den.'`); }
         };
     }
 }
 
+// --- LEVEL 5: BIKE (3 LIVES) ---
 class LevelBike extends Phaser.Scene {
     constructor() { super("LevelBike"); }
     create() {
-        this.road = this.add.tileSprite(400, 300, 800, 600, 'road');
+        this.add.tileSprite(400, 300, 800, 600, 'road');
         this.player = this.physics.add.sprite(400, 500, 'hunda_top').setScale(0.5);
-        this.player.body.setSize(40, 100);
-        this.cursors = this.input.keyboard.createCursorKeys();
         this.traffic = this.physics.add.group();
-        this.time.addEvent({ delay: 800, callback: () => {
-            let x = Phaser.Math.Between(200, 600);
-            let bus = this.traffic.create(x, -100, 'bus_top').setScale(0.6).setVelocityY(400);
-            bus.body.setSize(60, 150);
-        }, loop: true });
-        this.add.text(10, 10, "Distance: 200m", { fontSize: '20px', backgroundColor: '#000' });
-        
+        this.lifeText = this.add.text(20, 100, `Lives: ${BIKE_LIVES}`, { fontSize: '24px' });
+        this.time.addEvent({ delay: 1000, loop: true, callback: () => {
+            this.traffic.create(Phaser.Math.Between(200, 600), -100, 'bus_top').setScale(0.5).setVelocityY(450);
+        }});
         this.physics.add.overlap(this.player, this.traffic, (p, t) => {
-             t.destroy();
-             this.cameras.main.shake(200);
+            t.destroy(); BIKE_LIVES--; this.lifeText.setText(`Lives: ${BIKE_LIVES}`);
+            alert("CRASH! 10s lost while restarting bike..."); GLOBAL_TIMER -= 10;
+            if (BIKE_LIVES <= 0) location.reload();
         });
-
-        this.time.delayedCall(10000, () => this.scene.start("LevelBoss"));
-        addMobileControls(this);
+        this.time.delayedCall(12000, () => this.scene.start("LevelBoss"));
     }
-    update() {
-        this.road.tilePositionY -= 15;
-        let left = this.cursors.left.isDown || (this.leftBtn && this.leftBtn.isDown);
-        let right = this.cursors.right.isDown || (this.rightBtn && this.rightBtn.isDown);
-        if (left) this.player.x -= 5;
-        if (right) this.player.x += 5;
-    }
+    update() { let c = this.input.keyboard.createCursorKeys(); if (c.left.isDown) this.player.x -= 6; if (c.right.isDown) this.player.x += 6; }
 }
 
+// --- LEVEL BOSS: FINAL BATTLE (200HP) ---
 class LevelBoss extends Phaser.Scene {
     constructor() { super("LevelBoss"); }
     create() {
-        this.add.image(400, 300, 'city').setTint(0xff0000);
+        this.add.image(400, 300, 'city').setTint(0x220000);
         this.boss = this.physics.add.sprite(400, 150, 'momo_angry').setScale(0.8);
-        this.player = this.physics.add.sprite(400, 500, 'l1');
-        this.bossHP = 20;
-        this.playerHP = 3;
-        this.hpText = this.add.text(16, 16, "Momo Anger: 20", { fontSize: '32px', color: '#fff' });
-        this.pText = this.add.text(600, 16, "Lian HP: 3", { fontSize: '32px', color: '#fff' });
-        this.tweens.add({ targets: this.boss, x: 600, duration: 2000, yoyo: true, repeat: -1 });
+        this.player = this.physics.add.sprite(400, 500, 'l1').setScale(0.6).setTint(0xffaaaa);
+        this.bossHP = 200;
+        this.hpText = this.add.text(20, 80, "Momo HP: 200", { fontSize: '32px', color: '#ff0000' });
         
-        this.lasers = this.physics.add.group();
-        
-        // BOSS ATTACK PATTERN
-        this.time.addEvent({ delay: 1200, loop: true, callback: () => {
-            let rand = Phaser.Math.Between(0, 2);
-            if (rand === 0) {
-                // Fireball (Golla)
-                let orb = this.lasers.create(this.boss.x, this.boss.y, 'golla').setScale(0.2);
-                this.physics.moveToObject(orb, this.player, 250);
-            } else if (rand === 1) {
-                // Laser (Fast)
-                let beam = this.lasers.create(this.boss.x, this.boss.y, 'fire').setScale(0.1, 1).setTint(0xff0000);
-                beam.setVelocityY(800);
-            } else {
-                // Flame (Spread)
-                for(let i = -1; i <= 1; i++) {
-                    let flame = this.lasers.create(this.boss.x, this.boss.y, 'fire').setScale(0.15).setTint(0xff8800);
-                    flame.setVelocity(i * 100, 400);
-                }
-            }
+        this.input.keyboard.on('keydown-SPACE', () => {
+            let h = this.physics.add.sprite(this.player.x, this.player.y - 20, 'heart').setScale(0.05).setVelocityY(-650);
+            this.physics.add.overlap(h, this.boss, () => {
+                h.destroy(); this.bossHP -= 10;
+                this.hpText.setText(`Momo HP: ${this.bossHP}`);
+                if (this.bossHP <= 0) this.win();
+            });
+        });
+
+        this.time.addEvent({ delay: 7000, loop: true, callback: () => {
+            this.scene.pause();
+            let q = trapQuestions[Phaser.Math.Between(0, 2)];
+            let ans = prompt(`${q.q}\n0: ${q.a[0]}\n1: ${q.a[1]}`);
+            if (parseInt(ans) === q.c) this.scene.resume(); else location.reload();
         }});
-
-        this.physics.add.overlap(this.player, this.lasers, (p, l) => {
-            l.destroy();
-            this.playerHP--;
-            this.pText.setText("Lian HP: " + this.playerHP);
-            this.cameras.main.shake(100);
-            if (this.playerHP <= 0) this.scene.restart();
-        });
-        
-        this.time.addEvent({ delay: 5000, loop: true, callback: this.triggerTrap, callbackScope: this });
-
-        this.input.keyboard.on('keydown-SPACE', this.shootHeart, this);
-        this.cursors = this.input.keyboard.createCursorKeys();
-        addMobileControls(this, 'HEART');
-    }
-    
-    triggerTrap() {
-        this.scene.pause();
-        let q = trapQuestions[Phaser.Math.Between(0, trapQuestions.length - 1)];
-        let ans = prompt(`DANGER! SHE ASKS:\n${q.q}\n\nOptions:\n0: ${q.a[0]}\n1: ${q.a[1]}\n2: ${q.a[2]}\n\nEnter 0, 1, or 2:`);
-        
-        if (parseInt(ans) === q.c) {
-            alert("GOOD ANSWER. YOU LIVE.");
-            this.scene.resume();
-        } else {
-            alert("WRONG ANSWER! YOU DIED!");
-            location.reload(); 
-        }
-    }
-
-    update() {
-        let left = this.cursors.left.isDown || (this.leftBtn && this.leftBtn.isDown);
-        let right = this.cursors.right.isDown || (this.rightBtn && this.rightBtn.isDown);
-        let shoot = (this.actionBtn && this.actionBtn.isDown) || this.cursors.space.isDown;
-        
-        if (left) this.player.x -= 5;
-        if (right) this.player.x += 5;
-        if (shoot && Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)) || (this.actionBtn.isDown && !this.lastShoot)) {
-             this.shootHeart();
-             this.lastShoot = true;
-             this.time.delayedCall(200, () => { this.lastShoot = false; });
-        }
-    }
-    shootHeart() {
-        let heart = this.physics.add.sprite(this.player.x, this.player.y - 20, 'heart');
-        heart.setScale(0.05); // Tiny Heart
-        heart.setVelocityY(-600); // Fast
-        this.physics.add.overlap(heart, this.boss, (h, b) => {
-            h.destroy();
-            this.bossHP--;
-            this.hpText.setText("Momo Anger: " + this.bossHP);
-            if (this.bossHP <= 0) this.win();
-        });
     }
     win() {
-        this.physics.pause();
-        this.boss.setTexture('momo_happy');
-        GLOBAL_TIMER = 9999; 
-        
-        let div = document.createElement('div');
-        div.style = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; background:rgba(0,0,0,0.9); padding:20px; border:2px solid gold; color:white; font-family:monospace; z-index:9999;";
-        div.innerHTML = `
-            <h1>Will you be my forever?</h1>
-            <button onclick="playEnding()" style="font-size:20px; padding:10px; margin:10px; background:green; color:white;">YES</button>
-            <button onclick="playEnding()" style="font-size:20px; padding:10px; margin:10px; background:green; color:white;">100%</button>
-            <button id="noBtn" style="font-size:20px; padding:10px; margin:10px; background:red; color:white; position:absolute;">I will think about it</button>
-        `;
-        document.body.appendChild(div);
-
-        let noBtn = document.getElementById('noBtn');
-        noBtn.onmouseover = function() { noBtn.style.left = Math.random() * 200 + 'px'; noBtn.style.top = Math.random() * 200 + 'px'; };
-        noBtn.ontouchstart = function() { noBtn.style.left = Math.random() * 200 + 'px'; noBtn.style.top = Math.random() * 200 + 'px'; };
-
-        window.playEnding = function() {
-            document.body.innerHTML = `
-                <div style="width:100%; height:100vh; background:black; display:flex; justify-content:center; align-items:center;">
-                    <iframe width="100%" height="100%" src="https://www.youtube.com/embed/InTy_ceaGgw?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                </div>
-            `;
-        };
+        this.physics.pause(); this.boss.setTexture('momo_happy');
+        this.add.image(400, 300, 'win').setDepth(1000).setScale(1.2);
+        this.time.delayedCall(2000, () => {
+            let div = document.createElement('div');
+            div.style = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:black; color:white; padding:40px; text-align:center; z-index:10000; border:4px solid red;";
+            div.innerHTML = `<h1>Will you be my Valentine?</h1>
+                <button onclick="playEnd()" style="padding:15px; background:green; color:white;">YES</button>
+                <button onclick="playEnd()" style="padding:15px; background:green; color:white;">100% YES</button>
+                <button id="noBtn" style="position:absolute; background:red; color:white; padding:10px;">I will think about it</button>`;
+            document.body.appendChild(div);
+            let no = document.getElementById('noBtn');
+            no.onmouseover = () => { no.style.left = Math.random()*300+'px'; no.style.top = Math.random()*300+'px'; };
+        });
     }
 }
+
+window.playEnd = () => {
+    document.body.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/InTy_ceaGgw?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+};
